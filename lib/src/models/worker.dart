@@ -1,6 +1,7 @@
 class Worker {
   final String id;
-  final String name;
+  final String firstName;
+  final String lastName;
   final String email;
   final String password;
   final String phoneNumber;
@@ -10,27 +11,29 @@ class Worker {
   final double avgRating;
   final bool verifiedStatus;
   final double earnings;
-  final String profilePicture;
+  final String? profilePicture;
 
   Worker({
     required this.id,
-    required this.name,
+    required this.firstName,
+    required this.lastName,
     required this.email,
     required this.password,
     required this.phoneNumber,
     required this.profession,
     required this.skills,
     required this.availability,
-    required this.avgRating,
+    this.avgRating = 0.0,
     required this.verifiedStatus,
-    required this.earnings,
+    this.earnings = 0.0,
     required this.profilePicture,
   });
 
   factory Worker.fromJson(Map<String, dynamic> json) {
     return Worker(
       id: json['id'],
-      name: json['name'],
+      firstName: json['firstName' ],
+      lastName: json['lastName'],
       email: json['email'],
       password: json['password'],
       phoneNumber: json['phoneNumber'],
@@ -47,7 +50,8 @@ class Worker {
   Map<String, dynamic> toJson() {
     return {
       'id': id,
-      'name': name,
+      'firstName': firstName,
+      'lastName': lastName,
       'email': email,
       'password': password,
       'phoneNumber': phoneNumber,
