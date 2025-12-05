@@ -1,50 +1,43 @@
-class Customer {
-  final int customerId;
-  final String firstName;
-  final String lastName;
-  final String email;
-  final String password;
-  final String phoneNumber;
+import 'user.dart';
+
+class Customer extends User {
   final String address;
-  final String? avatarUrl;
   final DateTime dateJoined;
 
   Customer({
-    required this.customerId,
-    required this.firstName,
-    required this.lastName,
-    required this.email,
-    required this.password,
-    required this.phoneNumber,
+    required super.id,
+    required super.firstName,
+    required super.lastName,
+    required super.email,
+    required super.phoneNumber,
+    required super.avatarUrl,
     required this.address,
-    this.avatarUrl,
     required this.dateJoined,
   });
 
   factory Customer.fromJson(Map<String, dynamic> json) {
     return Customer(
-      customerId: json['customerId'],
-      firstName: json['firstName'],
-      lastName: json['lastName'],
+      id: json['id'],
+      firstName: json['first_name'],
+      lastName: json['last_name'],
       email: json['email'],
-      password: json['password'],
-      phoneNumber: json['phoneNumber'],
+      phoneNumber: json['phone_number'],
       address: json['address'],
-      avatarUrl: json['avatarUrl'],
-      dateJoined: DateTime.parse(json['dateJoined']),
+      avatarUrl: json['avatar_url'],
+      dateJoined: DateTime.parse(json['date_joined']),
     );
   }
 
+  @override
   Map<String, dynamic> toJson() {
     return {
-      'customerId': customerId,
-      'firstName': firstName,
+      'id': id,
+      'first_name': firstName,
       'email': email,
-      'password': password,
-      'phoneNumber': phoneNumber,
+      'phone_number': phoneNumber,
       'address': address,
-      'avatarUrl': avatarUrl,
-      'dateJoined': dateJoined.toIso8601String(),
+      'avatar_url': avatarUrl,
+      'date_joined': dateJoined.toIso8601String(),
     };
   }
 }
