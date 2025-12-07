@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+import 'CustomerDashboard.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -16,12 +17,9 @@ class HandyConnect extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      home: Scaffold(
-        appBar: AppBar(
-          
-        ),
-      )
+      debugShowCheckedModeBanner: false,
+      title: 'HandyConnect',
+      home: const CustomerDashboard(),
     );
   }
-
 }
