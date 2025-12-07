@@ -1,51 +1,50 @@
 class Review {
-  final int reviewId;
-  final int bookingId;
-  final int customerId;
-  final int workerId;
-  final int serviceId;
-  final double rating;
-  final String comment;
-  final DateTime date;
-  final String image;
+  final String reviewId;          // uuid
+  final String customerId;        // uuid
+  final String workerId;          // uuid
+  final String serviceId;         // uuid
+
+  final int rating;               // integer
+  final String? comment;          // nullable
+  final DateTime reviewDate;      // review_date
+  final List<String>? images;     // text[] nullable
 
   Review({
     required this.reviewId,
-    required this.bookingId,
     required this.customerId,
     required this.workerId,
     required this.serviceId,
     required this.rating,
     required this.comment,
-    required this.date,
-    required this.image,
+    required this.reviewDate,
+    required this.images,
   });
 
   factory Review.fromJson(Map<String, dynamic> json) {
     return Review(
-      reviewId: json['reviewId'],
-      bookingId: json['bookingId'],
-      customerId: json['customerId'],
-      workerId: json['workerId'],
-      serviceId: json['serviceId'],
-      rating: (json['rating'] as num).toDouble(),
+      reviewId: json['review_id'],
+      customerId: json['customer_id'],
+      workerId: json['worker_id'],
+      serviceId: json['service_id'],
+      rating: json['rating'],
       comment: json['comment'],
-      date: DateTime.parse(json['date']),
-      image: json['image'],
+      reviewDate: DateTime.parse(json['review_date']),
+      images: json['images'] != null
+          ? List<String>.from(json['images'])
+          : null,
     );
   }
 
   Map<String, dynamic> toJson() {
     return {
-      'reviewId': reviewId,
-      'bookingId': bookingId,
-      'customerId': customerId,
-      'workerId': workerId,
-      'serviceId': serviceId,
+      'review_id': reviewId,
+      'customer_id': customerId,
+      'worker_id': workerId,
+      'service_id': serviceId,
       'rating': rating,
       'comment': comment,
-      'date': date.toIso8601String(),
-      'image': image,
+      'review_date': reviewDate.toIso8601String(),
+      'images': images,
     };
   }
 }
