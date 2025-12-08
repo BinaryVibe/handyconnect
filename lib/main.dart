@@ -1,6 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
-import 'CustomerDashboard.dart';
+import 'customer_dashboard.dart';
+import 'service_details.dart'; // For testing
+
+const Color kPrimaryColor = Color.fromARGB(
+  255,
+  74,
+  46,
+  30,
+);
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -17,6 +25,9 @@ class HandyConnect extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
+      theme: ThemeData(
+        primaryColor: kPrimaryColor,
+      ),
       debugShowCheckedModeBanner: false,
       title: 'HandyConnect',
       home: const CustomerDashboard(),
