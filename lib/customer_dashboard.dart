@@ -10,9 +10,11 @@ const Color kPrimaryColor = Color.fromARGB(
 ); // buttons + headings
 const Color kFieldColor = Color(0xFFE9DFD8); // input backgrounds
 const Color kBackgroundColor = Color(0xFFF7F2EF); // main background
-const Color listTileColor = Color(0xFFAD8042);
+const Color listTileColor = Color(0xFFad8042);
 const Color secondaryTextColor = Color(0xFFBFAB67);
 const Color tagsBgColor = Color(0xFFBFC882);
+const Color professionColor = Color(0xFFede0d4);
+const Color nameColor = Color(0xffe6ccb2);
 
 // Supabase Service (Ready for integration)
 class SupabaseService {
@@ -203,49 +205,89 @@ class _CustomerDashboardState extends State<CustomerDashboard> {
   Widget build(BuildContext context) {
     return LayoutBuilder(
       builder: (context, constraints) {
+        final isMobile = constraints.maxWidth < 600;
+
+        if (isMobile) {
+          return Scaffold(
+            backgroundColor: kBackgroundColor,
+            body: _buildMainBody(),
+            bottomNavigationBar: _buildBottomNavigationBar(),
+          );
+        }
+
         return Scaffold(
           backgroundColor: kBackgroundColor,
-          body: Column(
+          body: Row(
             children: [
-              Container(
-                padding: const EdgeInsets.all(12.0),
-                // margin: EdgeInsets.only(bottom: 20.0),
-                decoration: BoxDecoration(color: kPrimaryColor),
-                child: Column(
-                  children: [
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        const Text(
-                          "Welcome!",
-                          style: TextStyle(color: Colors.white),
-                        ),
-                        IconButton(
-                          onPressed: () => {},
-                          icon: const Icon(
-                            Icons.notifications,
-                            color: Colors.white,
-                          ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 5.0),
-                    _buildSearchBar(),
-                  ],
-                ),
-              ),
-              Expanded(
-                child: _isLoading
-                    ? const Center(child: CircularProgressIndicator())
-                    : _filteredWorkers.isEmpty
-                    ? _buildEmptyState()
-                    : _buildWorkerList(),
-              ),
+              _buildNavigationRail(),
+              Expanded(child: _buildMainBody()),
             ],
           ),
-          bottomNavigationBar: _buildBottomNavigationBar(),
         );
       },
+    );
+  }
+
+  Widget _buildNavigationRail() {
+    return NavigationRail(
+      selectedIndex: _selectedIndex,
+      backgroundColor: kPrimaryColor,
+      onDestinationSelected: (index) => setState(() => _selectedIndex = index),
+      selectedIconTheme: IconThemeData(color: tagsBgColor),
+      unselectedIconTheme: const IconThemeData(color: Colors.white),
+      selectedLabelTextStyle: TextStyle(color: tagsBgColor),
+      unselectedLabelTextStyle: const TextStyle(color: Colors.white),
+
+      labelType: NavigationRailLabelType.all, // Always show labels
+      destinations: const [
+        NavigationRailDestination(icon: Icon(Icons.home), label: Text('Home')),
+        NavigationRailDestination(
+          icon: Icon(Icons.bookmark),
+          label: Text('Bookings'),
+        ),
+        NavigationRailDestination(
+          icon: Icon(Icons.chat),
+          label: Text('Messages'),
+        ),
+        NavigationRailDestination(
+          icon: Icon(Icons.person),
+          label: Text('Profile'),
+        ),
+      ],
+    );
+  }
+
+  Column _buildMainBody() {
+    return Column(
+      children: [
+        Container(
+          padding: const EdgeInsets.all(12.0),
+          decoration: BoxDecoration(color: kPrimaryColor),
+          child: Column(
+            children: [
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  const Text("Welcome!", style: TextStyle(color: Colors.white)),
+                  IconButton(
+                    onPressed: () => {},
+                    icon: const Icon(Icons.notifications, color: Colors.white),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 5.0),
+              _buildSearchBar(),
+            ],
+          ),
+        ),
+        Expanded(
+          child: _isLoading
+              ? const Center(child: CircularProgressIndicator())
+              : _filteredWorkers.isEmpty
+              ? _buildEmptyState()
+              : _buildWorkerList(),
+        ),
+      ],
     );
   }
 
@@ -278,11 +320,34 @@ class _CustomerDashboardState extends State<CustomerDashboard> {
   Widget _buildWorkerList() {
     return RefreshIndicator(
       onRefresh: _loadWorkers,
-      child: ListView.builder(
-        padding: const EdgeInsets.all(16),
-        itemCount: _filteredWorkers.length,
-        itemBuilder: (context, index) {
-          return WorkerCard(worker: _filteredWorkers[index]);
+      child: LayoutBuilder(
+        builder: (context, constraints) {
+          final isMobile = constraints.maxWidth < 600;
+
+          if (isMobile) {
+            return ListView.builder(
+              padding: const EdgeInsets.all(16),
+              itemCount: _filteredWorkers.length,
+              itemBuilder: (context, index) {
+                return WorkerCard(worker: _filteredWorkers[index]);
+              },
+            );
+          }
+
+          return GridView.builder(
+            padding: const EdgeInsets.all(16),
+            itemCount: _filteredWorkers.length,
+            gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+              crossAxisCount: MediaQuery.of(context).size.width ~/ 400,
+              mainAxisSpacing: 16,
+              crossAxisSpacing: 16,
+              childAspectRatio: 2.5 / 1,
+            ),
+
+            itemBuilder: (context, index) {
+              return WorkerCard(worker: _filteredWorkers[index]);
+            },
+          );
         },
       ),
     );
@@ -312,10 +377,11 @@ class _CustomerDashboardState extends State<CustomerDashboard> {
   Widget _buildBottomNavigationBar() {
     return BottomNavigationBar(
       currentIndex: _selectedIndex,
+      backgroundColor: kPrimaryColor,
       onTap: (index) => setState(() => _selectedIndex = index),
       type: BottomNavigationBarType.fixed,
-      selectedItemColor: Colors.blue[700],
-      unselectedItemColor: Colors.grey,
+      selectedItemColor: tagsBgColor,
+      unselectedItemColor: Colors.white,
       items: const [
         BottomNavigationBarItem(icon: Icon(Icons.home), label: 'Home'),
         BottomNavigationBarItem(icon: Icon(Icons.bookmark), label: 'Bookings'),
@@ -377,6 +443,7 @@ class WorkerCard extends StatelessWidget {
                               style: const TextStyle(
                                 fontSize: 18,
                                 fontWeight: FontWeight.bold,
+                                color: nameColor,
                               ),
                             ),
                             if (worker.verifiedStatus) ...[
@@ -392,7 +459,10 @@ class WorkerCard extends StatelessWidget {
                         const SizedBox(height: 4),
                         Text(
                           worker.profession,
-                          style: TextStyle(fontSize: 14, color: Colors.white),
+                          style: TextStyle(
+                            fontSize: 14,
+                            color: professionColor,
+                          ),
                         ),
                       ],
                     ),
