@@ -1,10 +1,11 @@
 import 'package:flutter/material.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 import 'login_screen.dart';
 
 // NEW THEME COLORS
-const Color kPrimaryColor = Color(0xFF4A2E1E);        // buttons + headings
-const Color kFieldColor = Color(0xFFE9DFD8);          // input backgrounds
-const Color kBackgroundColor = Color(0xFFF7F2EF);     // main background
+const Color kPrimaryColor = Color(0xFF4A2E1E);
+const Color kFieldColor = Color(0xFFE9DFD8);
+const Color kBackgroundColor = Color(0xFFF7F2EF);
 
 class SignUpScreen extends StatefulWidget {
   const SignUpScreen({super.key});
@@ -20,6 +21,9 @@ class _SignUpScreenState extends State<SignUpScreen> {
   final TextEditingController phone = TextEditingController();
   final TextEditingController pass = TextEditingController();
   final TextEditingController confirm = TextEditingController();
+
+  final _supabase = Supabase.instance.client;
+  bool loading = false;
 
   @override
   Widget build(BuildContext context) {
@@ -38,94 +42,108 @@ class _SignUpScreenState extends State<SignUpScreen> {
         ),
       ),
 
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 20),
-        child: Column(
-          children: [
-            _roundedField(
-              controller: fName,
-              hint: "First Name",
-              icon: Icons.person,
-            ),
-            const SizedBox(height: 20),
-
-            _roundedField(
-              controller: lName,
-              hint: "Last Name",
-              icon: Icons.person_outline,
-            ),
-            const SizedBox(height: 20),
-
-            _roundedField(
-              controller: email,
-              hint: "Email Address",
-              icon: Icons.email,
-            ),
-            const SizedBox(height: 20),
-
-            _roundedField(
-              controller: phone,
-              hint: "Phone Number",
-              icon: Icons.phone,
-            ),
-            const SizedBox(height: 20),
-
-            _roundedField(
-              controller: pass,
-              hint: "Password",
-              icon: Icons.lock,
-              isPassword: true,
-            ),
-            const SizedBox(height: 20),
-
-            _roundedField(
-              controller: confirm,
-              hint: "Confirm Password",
-              icon: Icons.lock,
-              isPassword: true,
-            ),
-
-            const SizedBox(height: 35),
-
-            SizedBox(
-              width: double.infinity,
-              height: 55,
-              child: ElevatedButton(
-                onPressed: _validate,
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: kPrimaryColor,
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(30),
-                  ),
-                  elevation: 3,
+      body: Stack(
+        children: [
+          SingleChildScrollView(
+            padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 20),
+            child: Column(
+              children: [
+                _roundedField(
+                  controller: fName,
+                  hint: "First Name",
+                  icon: Icons.person,
                 ),
-                child: const Text(
-                  "Sign Up",
-                  style: TextStyle(
-                    fontSize: 18,
-                    color: Colors.white,
-                    fontWeight: FontWeight.bold,
+                const SizedBox(height: 20),
+
+                _roundedField(
+                  controller: lName,
+                  hint: "Last Name",
+                  icon: Icons.person_outline,
+                ),
+                const SizedBox(height: 20),
+
+                _roundedField(
+                  controller: email,
+                  hint: "Email Address",
+                  icon: Icons.email,
+                ),
+                const SizedBox(height: 20),
+
+                _roundedField(
+                  controller: phone,
+                  hint: "Phone Number",
+                  icon: Icons.phone,
+                ),
+                const SizedBox(height: 20),
+
+                _roundedField(
+                  controller: pass,
+                  hint: "Password",
+                  icon: Icons.lock,
+                  isPassword: true,
+                ),
+                const SizedBox(height: 20),
+
+                _roundedField(
+                  controller: confirm,
+                  hint: "Confirm Password",
+                  icon: Icons.lock,
+                  isPassword: true,
+                ),
+
+                const SizedBox(height: 35),
+
+                SizedBox(
+                  width: double.infinity,
+                  height: 55,
+                  child: ElevatedButton(
+                    onPressed: loading ? null : _signUp,
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: kPrimaryColor,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(30),
+                      ),
+                      elevation: 3,
+                    ),
+                    child: const Text(
+                      "Sign Up",
+                      style: TextStyle(
+                        fontSize: 18,
+                        color: Colors.white,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
                   ),
                 ),
-              ),
+
+                const SizedBox(height: 25),
+
+                TextButton(
+                  onPressed: () {
+                    Navigator.pop(context);
+                  },
+                  child: const Text(
+                    "Already have an account? Log In",
+                    style: TextStyle(
+                      color: kPrimaryColor,
+                      decoration: TextDecoration.underline,
+                    ),
+                  ),
+                )
+              ],
             ),
+          ),
 
-            const SizedBox(height: 25),
-
-            TextButton(
-              onPressed: () {
-                Navigator.pop(context);
-              },
-              child: const Text(
-                "Already have an account? Log In",
-                style: TextStyle(
-                  color: kPrimaryColor,
-                  decoration: TextDecoration.underline,
+          if (loading)
+            Positioned.fill(
+              child: Container(
+                color: Colors.black.withOpacity(0.15),
+                child: const Center(
+                  child: CircularProgressIndicator(color: kPrimaryColor),
                 ),
               ),
             )
-          ],
-        ),
+        ],
       ),
     );
   }
@@ -155,7 +173,10 @@ class _SignUpScreenState extends State<SignUpScreen> {
     );
   }
 
-  void _validate() {
+  // -------------------------------
+  // 🔥 SUPABASE SIGN-UP FUNCTION
+  // -------------------------------
+  Future<void> _signUp() async {
     if (fName.text.isEmpty ||
         lName.text.isEmpty ||
         email.text.isEmpty ||
@@ -171,12 +192,42 @@ class _SignUpScreenState extends State<SignUpScreen> {
       return;
     }
 
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text("Account created successfully!"),
-        backgroundColor: Colors.green,
-      ),
-    );
+    setState(() => loading = true);
+
+    try {
+      final response = await _supabase.auth.signUp(
+        email: email.text.trim(),
+        password: pass.text.trim(),
+        data: {
+          "first_name": fName.text.trim(),
+          "last_name": lName.text.trim(),
+          "phone": phone.text.trim(),
+        },
+      );
+
+      if (!mounted) return;
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text("Account created! Welcome ${response.user?.email}"),
+          backgroundColor: Colors.green,
+        ),
+      );
+
+      Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(builder: (_) => const LoginScreen()),
+      );
+    }
+    on AuthException catch (e) {
+      _showError(e.message);
+    }
+    catch (e) {
+      _showError("An unexpected error occurred.");
+    }
+    finally {
+      if (mounted) setState(() => loading = false);
+    }
   }
 
   void _showError(String msg) {
