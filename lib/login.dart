@@ -346,7 +346,7 @@ Future<void> main() async {
   // Initialize Supabase
   await Supabase.initialize(
     url: 'https://afgvpnvqxzmosfogcysc.supabase.co', // <--- REPLACE THIS
-    anonKey: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFmZ3ZwbnZxeHptb3Nmb2djeXNjIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjQyNDk1NDEsImV4cCI6MjA3OTgyNTU0MX0.qzwr-KoOYDkpvpnPntRxdfOyCM5Ia4UKUtyupu86S94', // <--- REPLACE THIS
+    anonKey: 'sb_publishable_bLKZ8iWn8-BenfJLuq0TaA_ZVgzUItK', // <--- REPLACE THIS
   );
 
   runApp(const MyApp());
