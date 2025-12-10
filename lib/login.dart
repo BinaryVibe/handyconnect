@@ -1,11 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 
 // --- Color and Style Constants ---
-// Primary color (Dark Brown) for the button and icon: #5E453D
 const Color kPrimaryColor = Color(0xFF5E453D);
-// Secondary color (Orange-Brown) for the links: #C07B4D
 const Color kSecondaryColor = Color(0xFFC07B4D);
-// Background color (Light Cream)
 const Color kBackgroundColor = Color(0xFFFBFBFB);
 
 class LoginScreen extends StatefulWidget {
@@ -18,42 +16,79 @@ class LoginScreen extends StatefulWidget {
 class _LoginScreenState extends State<LoginScreen> {
   final TextEditingController _emailController = TextEditingController();
   final TextEditingController _passwordController = TextEditingController();
-  // State to control the separate loading indicator overlay
-  bool _isLoading = false; 
+  bool _isLoading = false;
 
-  // Function to handle the login attempt (simulated)
+  // Access the Supabase client
+  final _supabase = Supabase.instance.client;
+
+  // Function to handle the Supabase login
   void _handleLogin() async {
+    final email = _emailController.text.trim();
+    final password = _passwordController.text.trim();
+
     // Basic input validation
-    if (_emailController.text.isEmpty || _passwordController.text.isEmpty) {
+    if (email.isEmpty || password.isEmpty) {
+      if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-          content: Text('Please enter both email/phone and password.'),
+          content: Text('Please enter both email and password.'),
           backgroundColor: Colors.red,
         ),
       );
       return;
     }
 
-    // 1. Start loading and show the full-screen overlay indicator
     setState(() {
       _isLoading = true;
     });
 
-    // 2. Simulate the network request delay (***REPLACE THIS WITH YOUR REAL API CALL***)
-    await Future.delayed(const Duration(seconds: 3));
+    try {
+      // --- SUPABASE LOGIN CALL ---
+      final response = await _supabase.auth.signInWithPassword(
+        email: email,
+        password: password,
+      );
 
-    // 3. Stop loading and hide the overlay indicator
-    setState(() {
-      _isLoading = false;
-    });
+      // Check if widget is still in the tree before using context
+      if (!mounted) return;
 
-    // 4. Provide user feedback (In a real app, you would navigate away here)
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text('Login successful for: ${_emailController.text}'),
-        backgroundColor: Colors.green,
-      ),
-    );
+      // Success Feedback
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Login successful! Welcome, ${response.user?.email}'),
+          backgroundColor: Colors.green,
+        ),
+      );
+
+      // TODO: Navigate to your Home Screen here
+      // Navigator.pushReplacement(context, MaterialPageRoute(builder: (_) => HomeScreen()));
+
+    } on AuthException catch (error) {
+      // --- HANDLE SUPABASE AUTH ERRORS ---
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(error.message), // e.g. "Invalid login credentials"
+          backgroundColor: Colors.red,
+        ),
+      );
+    } catch (error) {
+      // --- HANDLE UNEXPECTED ERRORS ---
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('An unexpected error occurred. Please try again.'),
+          backgroundColor: Colors.red,
+        ),
+      );
+    } finally {
+      // Stop loading regardless of success or failure
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+        });
+      }
+    }
   }
 
   @override
@@ -65,18 +100,16 @@ class _LoginScreenState extends State<LoginScreen> {
 
   @override
   Widget build(BuildContext context) {
-    // Use Stack to layer the main content and the optional loading overlay
     return Scaffold(
       backgroundColor: kBackgroundColor,
       body: Stack(
         children: [
-          // 1. Main Content (The Login Form)
+          // 1. Main Content
           SafeArea(
             child: SingleChildScrollView(
               padding: const EdgeInsets.symmetric(horizontal: 32.0),
               child: ConstrainedBox(
                 constraints: BoxConstraints(
-                  // Ensure content is centered vertically and covers the screen height
                   minHeight: MediaQuery.of(context).size.height -
                       MediaQuery.of(context).padding.top,
                 ),
@@ -86,7 +119,6 @@ class _LoginScreenState extends State<LoginScreen> {
                     children: <Widget>[
                       const SizedBox(height: 50),
                       // --- Logo/Icon Section ---
-                      // The Icon is a placeholder for the wrench/gear icon from the image
                       const Icon(
                         Icons.settings_applications,
                         size: 60,
@@ -114,16 +146,16 @@ class _LoginScreenState extends State<LoginScreen> {
                       ),
                       const SizedBox(height: 40),
 
-                      // --- Email/Phone Input Field ---
+                      // --- Email Input ---
                       _buildRoundedInputField(
                         controller: _emailController,
-                        hintText: 'Email or Phone',
+                        hintText: 'Email',
                         icon: Icons.person_outline,
                         keyboardType: TextInputType.emailAddress,
                       ),
                       const SizedBox(height: 20),
 
-                      // --- Password Input Field ---
+                      // --- Password Input ---
                       _buildRoundedInputField(
                         controller: _passwordController,
                         hintText: 'Password',
@@ -138,7 +170,7 @@ class _LoginScreenState extends State<LoginScreen> {
                           alignment: Alignment.centerRight,
                           child: TextButton(
                             onPressed: () {
-                              // Action for Forgot Password
+                              // TODO: Implement Reset Password Logic
                             },
                             child: const Text(
                               'Forgot Password?',
@@ -158,8 +190,7 @@ class _LoginScreenState extends State<LoginScreen> {
                         width: double.infinity,
                         height: 58,
                         child: ElevatedButton(
-                          // Disable the button while loading
-                          onPressed: _isLoading ? null : _handleLogin, 
+                          onPressed: _isLoading ? null : _handleLogin,
                           style: ElevatedButton.styleFrom(
                             backgroundColor: kPrimaryColor,
                             shape: RoundedRectangleBorder(
@@ -185,7 +216,7 @@ class _LoginScreenState extends State<LoginScreen> {
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
                           const Text(
-                            "Don't have you account?",
+                            "Don't have an account?",
                             style: TextStyle(
                               fontSize: 15,
                               color: Colors.black54,
@@ -193,7 +224,7 @@ class _LoginScreenState extends State<LoginScreen> {
                           ),
                           TextButton(
                             onPressed: () {
-                              // Action for Sign Up
+                              // TODO: Navigate to Sign Up Screen
                             },
                             child: const Text(
                               'Sign Up',
@@ -216,12 +247,11 @@ class _LoginScreenState extends State<LoginScreen> {
             ),
           ),
 
-          // 2. Loading Indicator Overlay (Visible only when _isLoading is true)
+          // 2. Loading Indicator Overlay
           if (_isLoading)
             Positioned.fill(
               child: Container(
-                // Semi-transparent background to dim the UI
-                color: Colors.black.withOpacity(0.15), 
+                color: Colors.black.withOpacity(0.15),
                 child: Center(
                   child: Container(
                     padding: const EdgeInsets.all(30),
@@ -239,7 +269,7 @@ class _LoginScreenState extends State<LoginScreen> {
                     child: Column(
                       mainAxisSize: MainAxisSize.min,
                       children: [
-                        CircularProgressIndicator(color: kPrimaryColor),
+                        const CircularProgressIndicator(color: kPrimaryColor),
                         const SizedBox(height: 15),
                         const Text(
                           "Logging in...",
@@ -260,7 +290,6 @@ class _LoginScreenState extends State<LoginScreen> {
     );
   }
 
-  // Custom widget for the rounded input fields
   Widget _buildRoundedInputField({
     required TextEditingController controller,
     required String hintText,
@@ -309,8 +338,17 @@ class _LoginScreenState extends State<LoginScreen> {
   }
 }
 
-// --- Main Entry Point for the App ---
-void main() {
+// --- Main Entry Point ---
+Future<void> main() async {
+  // Ensure Flutter binding is initialized before calling async code
+  WidgetsFlutterBinding.ensureInitialized();
+
+  // Initialize Supabase
+  await Supabase.initialize(
+    url: 'https://afgvpnvqxzmosfogcysc.supabase.co', // <--- REPLACE THIS
+    anonKey: 'sb_publishable_bLKZ8iWn8-BenfJLuq0TaA_ZVgzUItK', // <--- REPLACE THIS
+  );
+
   runApp(const MyApp());
 }
 
