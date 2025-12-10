@@ -57,19 +57,10 @@ class _BookServiceScreenState extends State<BookServiceScreen> {
       serviceTitle: _titleController.text.trim(),
       description: _descriptionController.text.trim(),
       location: _locationController.text.trim(),
-
-      price: null,
-      priceUnit: null,
       acceptedStatus: false,
-      paidStatus: false,
-
       createdAt: now,
       updatedAt: now,
 
-      bookingDate: null,
-      startDate: null,
-      expectedEnd: null,
-      completedDate: null,
     );
 
     // TODO: send newService.toJson() to your API / Supabase backend
