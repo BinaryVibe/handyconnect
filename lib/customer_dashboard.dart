@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
-import 'package:supabase_flutter/supabase_flutter.dart';
+// import 'package:supabase_flutter/supabase_flutter.dart';
 import 'src/models/worker.dart';
+import 'src/providers/worker_provider.dart';
 
 const Color kPrimaryColor = Color.fromARGB(
   255,
@@ -16,127 +17,7 @@ const Color tagsBgColor = Color(0xFFBFC882);
 const Color professionColor = Color(0xFFede0d4);
 const Color nameColor = Color(0xffe6ccb2);
 
-// Supabase Service (Ready for integration)
-class SupabaseService {
-  final supabase = Supabase.instance.client;
 
-  // Fetch all workers
-  Future<List<Worker>> fetchWorkers() async {
-    try {
-      // TODO: Replace with actual Supabase query
-      // final response = await supabase.from('workers').select();
-      // return (response as List).map((json) => Worker.fromJson(json)).toList();
-
-      // Mock data for demonstration
-      await Future.delayed(const Duration(seconds: 1));
-      return _getMockWorkers();
-    } catch (e) {
-      throw Exception('Failed to fetch workers: $e');
-    }
-  }
-
-  // Search workers by profession or skills
-  Future<List<Worker>> searchWorkers(String query) async {
-    try {
-      // TODO: Replace with actual Supabase query
-      // final response = await supabase
-      //     .from('workers')
-      //     .select()
-      //     .or('profession.ilike.%$query%,skills.cs.{$query}');
-      // return (response as List).map((json) => Worker.fromJson(json)).toList();
-
-      // Mock search for demonstration
-      await Future.delayed(const Duration(milliseconds: 500));
-      return _getMockWorkers()
-          .where(
-            (w) =>
-                w.profession.toLowerCase().contains(query.toLowerCase()) ||
-                w.skills.any(
-                  (s) => s.toLowerCase().contains(query.toLowerCase()),
-                ),
-          )
-          .toList();
-    } catch (e) {
-      throw Exception('Failed to search workers: $e');
-    }
-  }
-
-  // Mock data generator
-  List<Worker> _getMockWorkers() {
-    return [
-      Worker(
-        id: '1',
-        firstName: 'John',
-        lastName: 'Smith',
-        email: 'john.smith@example.com',
-        phoneNumber: '+1234567890',
-        avatarUrl: 'https://i.pravatar.cc/150?img=1',
-        profession: 'Plumber',
-        skills: ['Pipe Repair', 'Drain Cleaning', 'Water Heater'],
-        availability: true,
-        avgRating: 4.8,
-        verifiedStatus: true,
-        earnings: 45000,
-      ),
-      Worker(
-        id: '2',
-        firstName: 'Sarah',
-        lastName: 'Johnson',
-        email: 'sarah.j@example.com',
-        phoneNumber: '+1234567891',
-        avatarUrl: 'https://i.pravatar.cc/150?img=2',
-        profession: 'Electrician',
-        skills: ['Wiring', 'Circuit Breaker', 'Lighting Installation'],
-        availability: true,
-        avgRating: 4.9,
-        verifiedStatus: true,
-        earnings: 52000,
-      ),
-      Worker(
-        id: '3',
-        firstName: 'Mike',
-        lastName: 'Davis',
-        email: 'mike.d@example.com',
-        phoneNumber: '+1234567892',
-        avatarUrl: 'https://i.pravatar.cc/150?img=3',
-        profession: 'Carpenter',
-        skills: ['Furniture', 'Framing', 'Cabinet Making'],
-        availability: false,
-        avgRating: 4.6,
-        verifiedStatus: true,
-        earnings: 38000,
-      ),
-      Worker(
-        id: '4',
-        firstName: 'Emily',
-        lastName: 'Brown',
-        email: 'emily.b@example.com',
-        phoneNumber: '+1234567893',
-        avatarUrl: 'https://i.pravatar.cc/150?img=4',
-        profession: 'Painter',
-        skills: ['Interior Painting', 'Exterior Painting', 'Wallpaper'],
-        availability: true,
-        avgRating: 4.7,
-        verifiedStatus: false,
-        earnings: 32000,
-      ),
-      Worker(
-        id: '5',
-        firstName: 'David',
-        lastName: 'Wilson',
-        email: 'david.w@example.com',
-        phoneNumber: '+1234567894',
-        avatarUrl: 'https://i.pravatar.cc/150?img=5',
-        profession: 'HVAC Technician',
-        skills: ['AC Repair', 'Heating', 'Ventilation'],
-        availability: true,
-        avgRating: 4.5,
-        verifiedStatus: true,
-        earnings: 48000,
-      ),
-    ];
-  }
-}
 
 // Main Dashboard Screen
 class CustomerDashboard extends StatefulWidget {
