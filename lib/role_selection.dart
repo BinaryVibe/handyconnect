@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'worker_detail.dart';
 
 void main() {
   runApp(const MyApp());
@@ -111,13 +112,20 @@ class _RoleSelectionScreenState extends State<RoleSelectionScreen> {
                           print("Selected Role: $selectedRole");
                           
                           // UNCOMMENT THIS WHEN YOU HAVE YOUR NEXT SCREENS:
-                          /*
-                          if (selectedRole == 'customer') {
-                             Navigator.push(context, MaterialPageRoute(builder: (_) => CustomerHomeScreen()));
-                          } else {
-                             Navigator.push(context, MaterialPageRoute(builder: (_) => ProviderDashboardScreen()));
-                          }
-                          */
+                         if (selectedRole == 'provider') {
+          // Navigate to Worker/Provider Screen
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (context) => const WorkerProfileDetailsScreen(),
+            ),
+          );
+        } else if (selectedRole == 'customer') {
+          // TODO: Add Customer Screen logic here later
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text("Customer flow coming soon!")),
+          );
+        }
                         },
                   style: ElevatedButton.styleFrom(
                     backgroundColor: primaryBrown,
