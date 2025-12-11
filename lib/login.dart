@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+import 'signup.dart';
 
 // --- Color and Style Constants ---
 const Color kPrimaryColor = Color(0xFF5E453D);
@@ -223,9 +224,13 @@ class _LoginScreenState extends State<LoginScreen> {
                             ),
                           ),
                           TextButton(
-                            onPressed: () {
-                              // TODO: Navigate to Sign Up Screen
-                            },
+                           onPressed: () {
+                                // Navigate to Sign Up Screen
+                                Navigator.push(
+                                  context,
+                                  MaterialPageRoute(builder: (context) => const SignUpScreen()),
+                                );
+                              },
                             child: const Text(
                               'Sign Up',
                               style: TextStyle(

@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
-import 'customer_dashboard.dart';
-import 'service_details.dart'; // For testing
+import 'signup.dart'; // For testing
 
 const Color kPrimaryColor = Color.fromARGB(
   255,
@@ -30,7 +29,7 @@ class HandyConnect extends StatelessWidget {
       ),
       debugShowCheckedModeBanner: false,
       title: 'HandyConnect',
-      home: const CustomerDashboard(),
+      home: const SignUpScreen(),
     );
   }
 }
