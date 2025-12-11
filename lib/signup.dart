@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
-import 'login_screen.dart';
+import 'login.dart';
 
 // NEW THEME COLORS
 const Color kPrimaryColor = Color(0xFF4A2E1E);
@@ -120,7 +120,10 @@ class _SignUpScreenState extends State<SignUpScreen> {
 
                 TextButton(
                   onPressed: () {
-                    Navigator.pop(context);
+                    Navigator.pushReplacement(
+                      context,
+                      MaterialPageRoute(builder: (context) => const LoginScreen()),
+                    );
                   },
                   child: const Text(
                     "Already have an account? Log In",
