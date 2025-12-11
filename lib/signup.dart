@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
-import 'login_screen.dart';
+import 'login.dart';
 
 // NEW THEME COLORS
 const Color kPrimaryColor = Color(0xFF4A2E1E);
@@ -201,7 +201,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
         data: {
           "first_name": fName.text.trim(),
           "last_name": lName.text.trim(),
-          "phone": phone.text.trim(),
+          "phone_number": phone.text.trim(),
         },
       );
 
