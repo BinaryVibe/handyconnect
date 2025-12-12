@@ -90,7 +90,7 @@ class _WorkerDashboardState extends State<WorkerDashboard> {
     late Widget page;
     switch(_selectedIndex) {
       case 0:
-        page = _buildMainBody();
+        page = _buildServicesPage();
         break;
       case 1:
         page = Placeholder();
@@ -112,7 +112,7 @@ class _WorkerDashboardState extends State<WorkerDashboard> {
         if (isMobile) {
           return Scaffold(
             backgroundColor: kBackgroundColor,
-            body: _buildMainBody(),
+            body: _buildServicesPage(),
             bottomNavigationBar: _buildBottomNavigationBar(),
           );
         }
@@ -161,7 +161,7 @@ class _WorkerDashboardState extends State<WorkerDashboard> {
     );
   }
 
-  Widget _buildMainBody() {
+  Widget _buildServicesPage() {
     return Column(
       children: [
         Container(
