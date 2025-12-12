@@ -2,13 +2,14 @@ import 'package:flutter/foundation.dart';
 import '../models/worker.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
-class SupabaseService {
-  final supabase = Supabase.instance.client;
+class WorkerSupabaseService {
+  final _supabase = Supabase.instance.client;
+  late final _userId = _supabase.auth.currentUser?.id;
 
   // Fetch all workers
   Future<List<Worker>> fetchWorkers() async {
     try {
-      final response = await supabase.from('workers').select();
+      final response = await _supabase.from('workers').select();
       return (response as List).map((json) => Worker.fromJson(json)).toList();
     } catch (e) {
       throw Exception('Failed to fetch workers: $e');
@@ -18,13 +19,22 @@ class SupabaseService {
   // Search workers by profession or skills
   Future<List<Worker>> searchWorkers(String query) async {
     try {
-      final response = await supabase
+      final response = await _supabase
           .from('workers')
           .select()
           .or('profession.ilike.%$query%,skills.cs.{$query}');
       return (response as List).map((json) => Worker.fromJson(json)).toList();
     } catch (e) {
       throw Exception('Failed to search workers: $e');
+    }
+  }
+
+  Future<void> insertWorker(Map<String, dynamic> workerData) async {
+    workerData['id'] = _userId;
+    try {
+      await _supabase.from('workers').insert(workerData);
+    } catch (e) {
+      throw Exception('Failed to insert Worker');
     }
   }
 
