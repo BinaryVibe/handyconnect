@@ -342,39 +342,3 @@ class _LoginScreenState extends State<LoginScreen> {
     );
   }
 }
-
-// --- Main Entry Point ---
-Future<void> main() async {
-  // Ensure Flutter binding is initialized before calling async code
-  WidgetsFlutterBinding.ensureInitialized();
-
-  // Initialize Supabase
-  await Supabase.initialize(
-    url: 'https://afgvpnvqxzmosfogcysc.supabase.co', // <--- REPLACE THIS
-    anonKey: 'sb_publishable_bLKZ8iWn8-BenfJLuq0TaA_ZVgzUItK', // <--- REPLACE THIS
-  );
-
-  runApp(const MyApp());
-}
-
-class MyApp extends StatelessWidget {
-  const MyApp({super.key});
-
-  @override
-  Widget build(BuildContext context) {
-    return MaterialApp(
-      title: 'Service Hub Login',
-      debugShowCheckedModeBanner: false,
-      theme: ThemeData(
-        useMaterial3: true,
-        colorScheme: ColorScheme.fromSeed(
-          seedColor: kPrimaryColor,
-          primary: kPrimaryColor,
-          secondary: kSecondaryColor,
-        ),
-        fontFamily: 'Roboto',
-      ),
-      home: const LoginScreen(),
-    );
-  }
-}
