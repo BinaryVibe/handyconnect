@@ -1,27 +1,29 @@
 import 'package:flutter/material.dart';
-import 'worker_detail.dart';
+import 'worker_profile_input.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
+import 'src/providers/user_provider.dart';
 
-void main() {
-  runApp(const MyApp());
-}
+// void main() {
+//   runApp(const MyApp());
+// }
 
-class MyApp extends StatelessWidget {
-  const MyApp({super.key});
+// class MyApp extends StatelessWidget {
+//   const MyApp({super.key});
 
-  @override
-  Widget build(BuildContext context) {
-    return MaterialApp(
-      debugShowCheckedModeBanner: false,
-      title: 'Service App',
-      theme: ThemeData(
-        // Setting the primary swatch to match your brown theme
-        primarySwatch: Colors.brown,
-        useMaterial3: true,
-      ),
-      home: const RoleSelectionScreen(),
-    );
-  }
-}
+//   @override
+//   Widget build(BuildContext context) {
+//     return MaterialApp(
+//       debugShowCheckedModeBanner: false,
+//       title: 'Service App',
+//       theme: ThemeData(
+//         // Setting the primary swatch to match your brown theme
+//         primarySwatch: Colors.brown,
+//         useMaterial3: true,
+//       ),
+//       home: const RoleSelectionScreen(),
+//     );
+//   }
+// }
 
 // --- PASTE THE PREVIOUS CODE BELOW THIS LINE ---
 
