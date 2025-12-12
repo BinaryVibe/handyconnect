@@ -31,122 +31,144 @@ class _SignUpScreenState extends State<SignUpScreen> {
     return Scaffold(
       backgroundColor: kBackgroundColor,
       appBar: AppBar(
-        backgroundColor: kBackgroundColor,
+        backgroundColor: kPrimaryColor,
         elevation: 0,
         centerTitle: true,
+        toolbarHeight: 100.0,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.vertical(bottom: Radius.circular(30)),
+        ),
         title: const Text(
-          "Create Account",
-          style: TextStyle(color: kPrimaryColor, fontWeight: FontWeight.bold),
+          "Sign Up",
+          style: TextStyle(color: kFieldColor, fontSize: 30),
         ),
       ),
 
-      body: Stack(
-        children: [
-          SingleChildScrollView(
-            padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 20),
-            child: Column(
-              children: [
-                _roundedField(
-                  controller: fName,
-                  hint: "First Name",
-                  icon: Icons.person,
+      body: Center(
+        child: ConstrainedBox(
+          constraints: BoxConstraints(maxWidth: 600),
+          child: Stack(
+            children: [
+              SingleChildScrollView(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 32,
+                  vertical: 20,
                 ),
-                const SizedBox(height: 20),
-
-                _roundedField(
-                  controller: lName,
-                  hint: "Last Name",
-                  icon: Icons.person_outline,
-                ),
-                const SizedBox(height: 20),
-
-                _roundedField(
-                  controller: email,
-                  hint: "Email Address",
-                  icon: Icons.email,
-                ),
-                const SizedBox(height: 20),
-
-                _roundedField(
-                  controller: phone,
-                  hint: "Phone Number",
-                  icon: Icons.phone,
-                ),
-                const SizedBox(height: 20),
-
-                _roundedField(
-                  controller: pass,
-                  hint: "Password",
-                  icon: Icons.lock,
-                  isPassword: true,
-                ),
-                const SizedBox(height: 20),
-
-                _roundedField(
-                  controller: confirm,
-                  hint: "Confirm Password",
-                  icon: Icons.lock,
-                  isPassword: true,
-                ),
-
-                const SizedBox(height: 35),
-
-                SizedBox(
-                  width: double.infinity,
-                  height: 55,
-                  child: ElevatedButton(
-                    onPressed: loading ? null : _signUp,
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: kPrimaryColor,
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(30),
-                      ),
-                      elevation: 3,
+                child: Column(
+                  children: [
+                    Row(
+                      children: [
+                        // NOTE: Without Expanded widgets the code will throw an exception.
+                        
+                        Expanded(
+                          child: _roundedField(
+                            controller: fName,
+                            hint: "First Name",
+                            icon: Icons.person,
+                          ),
+                        ),
+                        const SizedBox(width: 16),
+                        Expanded(
+                          child: _roundedField(
+                            controller: lName,
+                            hint: "Last Name",
+                            icon: Icons.person_outline,
+                          ),
+                        ),
+                      ],
                     ),
-                    child: const Text(
-                      "Sign Up",
-                      style: TextStyle(
-                        fontSize: 18,
-                        color: Colors.white,
-                        fontWeight: FontWeight.bold,
+
+                    const SizedBox(height: 25),
+
+                    _roundedField(
+                      controller: email,
+                      hint: "Email Address",
+                      icon: Icons.email,
+                    ),
+                    const SizedBox(height: 25),
+
+                    _roundedField(
+                      controller: phone,
+                      hint: "Phone Number",
+                      icon: Icons.phone,
+                    ),
+                    const SizedBox(height: 25),
+
+                    _roundedField(
+                      controller: pass,
+                      hint: "Password",
+                      icon: Icons.lock,
+                      isPassword: true,
+                    ),
+                    const SizedBox(height: 25),
+
+                    _roundedField(
+                      controller: confirm,
+                      hint: "Confirm Password",
+                      icon: Icons.lock,
+                      isPassword: true,
+                    ),
+
+                    const SizedBox(height: 35),
+
+                    SizedBox(
+                      width: double.infinity,
+                      height: 55,
+                      child: ElevatedButton(
+                        onPressed: loading ? null : _signUp,
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: kPrimaryColor,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(30),
+                          ),
+                          elevation: 3,
+                        ),
+                        child: const Text(
+                          "Sign Up",
+                          style: TextStyle(
+                            fontSize: 18,
+                            color: Colors.white,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
                       ),
                     ),
-                  ),
-                ),
 
-                const SizedBox(height: 25),
+                    const SizedBox(height: 25),
 
-                TextButton(
-                  onPressed: () {
-                    Navigator.pushReplacement(
-                      context,
-                      MaterialPageRoute(
-                        builder: (context) => const LoginScreen(),
+                    TextButton(
+                      onPressed: () {
+                        Navigator.pushReplacement(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => const LoginScreen(),
+                          ),
+                        );
+                      },
+                      child: const Text(
+                        "Already have an account? Log In",
+                        style: TextStyle(
+                          color: kPrimaryColor,
+                          decoration: TextDecoration.underline,
+                        ),
                       ),
-                    );
-                  },
-                  child: const Text(
-                    "Already have an account? Log In",
-                    style: TextStyle(
-                      color: kPrimaryColor,
-                      decoration: TextDecoration.underline,
                     ),
-                  ),
-                ),
-              ],
-            ),
-          ),
-
-          if (loading)
-            Positioned.fill(
-              child: Container(
-                color: Colors.black.withValues(alpha: 0.15),
-                child: const Center(
-                  child: CircularProgressIndicator(color: kPrimaryColor),
+                  ],
                 ),
               ),
-            ),
-        ],
+
+              if (loading)
+                Positioned.fill(
+                  child: Container(
+                    color: Colors.black.withValues(alpha: 0.15),
+                    child: const Center(
+                      child: CircularProgressIndicator(color: kPrimaryColor),
+                    ),
+                  ),
+                ),
+            ],
+          ),
+        ),
       ),
     );
   }
