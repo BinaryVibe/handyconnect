@@ -59,19 +59,18 @@ class _SignUpScreenState extends State<SignUpScreen> {
                     Row(
                       children: [
                         // NOTE: Without Expanded widgets the code will throw an exception.
-                        
                         Expanded(
-                          child: _roundedField(
+                          child: _buildRoundedInputField(
                             controller: fName,
-                            hint: "First Name",
+                            hintText: "First Name",
                             icon: Icons.person,
                           ),
                         ),
                         const SizedBox(width: 16),
                         Expanded(
-                          child: _roundedField(
+                          child: _buildRoundedInputField(
                             controller: lName,
-                            hint: "Last Name",
+                            hintText: "Last Name",
                             icon: Icons.person_outline,
                           ),
                         ),
@@ -80,31 +79,31 @@ class _SignUpScreenState extends State<SignUpScreen> {
 
                     const SizedBox(height: 25),
 
-                    _roundedField(
+                    _buildRoundedInputField(
                       controller: email,
-                      hint: "Email Address",
+                      hintText: "Email Address",
                       icon: Icons.email,
                     ),
                     const SizedBox(height: 25),
 
-                    _roundedField(
+                    _buildRoundedInputField(
                       controller: phone,
-                      hint: "Phone Number",
+                      hintText: "Phone Number",
                       icon: Icons.phone,
                     ),
                     const SizedBox(height: 25),
 
-                    _roundedField(
+                    _buildRoundedInputField(
                       controller: pass,
-                      hint: "Password",
+                      hintText: "Password",
                       icon: Icons.lock,
                       isPassword: true,
                     ),
                     const SizedBox(height: 25),
 
-                    _roundedField(
+                    _buildRoundedInputField(
                       controller: confirm,
-                      hint: "Confirm Password",
+                      hintText: "Confirm Password",
                       icon: Icons.lock,
                       isPassword: true,
                     ),
@@ -136,22 +135,33 @@ class _SignUpScreenState extends State<SignUpScreen> {
 
                     const SizedBox(height: 25),
 
-                    TextButton(
-                      onPressed: () {
-                        Navigator.pushReplacement(
-                          context,
-                          MaterialPageRoute(
-                            builder: (context) => const LoginScreen(),
-                          ),
-                        );
-                      },
-                      child: const Text(
-                        "Already have an account? Log In",
-                        style: TextStyle(
-                          color: kPrimaryColor,
-                          decoration: TextDecoration.underline,
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        const Text(
+                          "Already have an account?",
+                          style: TextStyle(fontSize: 15, color: Colors.black54),
                         ),
-                      ),
+                        TextButton(
+                          onPressed: () {
+                            // Navigate to Sign Up Screen
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (context) => const LoginScreen(),
+                              ),
+                            );
+                          },
+                          child: const Text(
+                            'Log In',
+                            style: TextStyle(
+                              fontSize: 15,
+                              fontWeight: FontWeight.bold,
+                              color: kSecondaryColor,
+                            ),
+                          ),
+                        ),
+                      ],
                     ),
                   ],
                 ),
@@ -173,26 +183,48 @@ class _SignUpScreenState extends State<SignUpScreen> {
     );
   }
 
-  Widget _roundedField({
+  Widget _buildRoundedInputField({
     required TextEditingController controller,
-    required String hint,
+    required String hintText,
     required IconData icon,
     bool isPassword = false,
+    TextInputType keyboardType = TextInputType.text,
   }) {
     return Container(
       decoration: BoxDecoration(
-        color: kFieldColor,
+        color: Colors.white,
         borderRadius: BorderRadius.circular(30),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.grey.withValues(alpha: 0.1),
+            spreadRadius: 2,
+            blurRadius: 5,
+            offset: const Offset(0, 3),
+          ),
+        ],
       ),
       child: TextField(
         controller: controller,
         obscureText: isPassword,
+        keyboardType: keyboardType,
+        style: const TextStyle(color: Colors.black87),
         decoration: InputDecoration(
-          hintText: hint,
-          hintStyle: TextStyle(color: kPrimaryColor.withValues(alpha: 0.6)),
-          prefixIcon: Icon(icon, color: kPrimaryColor),
-          border: InputBorder.none,
+          hintText: hintText,
+          hintStyle: TextStyle(color: Colors.grey.shade400),
+          prefixIcon: Padding(
+            padding: const EdgeInsets.only(left: 15, right: 10),
+            child: Icon(icon, color: kPrimaryColor),
+          ),
           contentPadding: const EdgeInsets.symmetric(vertical: 18),
+          border: InputBorder.none,
+          enabledBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(30),
+            borderSide: BorderSide(color: Colors.grey.shade300, width: 1.0),
+          ),
+          focusedBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(30),
+            borderSide: const BorderSide(color: kPrimaryColor, width: 2.0),
+          ),
         ),
       ),
     );
