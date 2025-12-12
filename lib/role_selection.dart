@@ -37,11 +37,16 @@ class RoleSelectionScreen extends StatefulWidget {
 class _RoleSelectionScreenState extends State<RoleSelectionScreen> {
   // Variable to track selected role
   String? selectedRole; // Values: 'customer', 'provider'
+  final UserSupabaseService _supabaseService = UserSupabaseService();
 
   // Define Theme Colors based on your "Coffee" aesthetic
   final Color primaryBrown = const Color(0xFF4E342E); // Dark Brown text/buttons
-  final Color cardBackground = const Color(0xFFD7CCC8); // Light Beige/Tan for cards
-  final Color scaffoldBackground = const Color(0xFFFAFAFA); // Off-white background
+  final Color cardBackground = const Color(
+    0xFFD7CCC8,
+  ); // Light Beige/Tan for cards
+  final Color scaffoldBackground = const Color(
+    0xFFFAFAFA,
+  ); // Off-white background
 
   @override
   Widget build(BuildContext context) {
@@ -57,7 +62,7 @@ class _RoleSelectionScreenState extends State<RoleSelectionScreen> {
               IconButton(
                 icon: Icon(Icons.arrow_back, color: primaryBrown),
                 onPressed: () {
-                  // This handles the back button. 
+                  // This handles the back button.
                   // If there is no previous screen, it might not do anything in a test run.
                   if (Navigator.canPop(context)) {
                     Navigator.pop(context);
@@ -66,7 +71,7 @@ class _RoleSelectionScreenState extends State<RoleSelectionScreen> {
                 padding: EdgeInsets.zero,
                 alignment: Alignment.centerLeft,
               ),
-              
+
               const SizedBox(height: 20),
 
               // 2. Title Text
@@ -94,10 +99,10 @@ class _RoleSelectionScreenState extends State<RoleSelectionScreen> {
 
               // 4. Provider Option Card
               _buildRoleCard(
-                roleValue: 'provider',
+                roleValue: 'worker',
                 title: "I am a provider\n(Worker)",
                 subtitle: "Offer your skills and find new customers.",
-                icon: Icons.handyman_outlined, 
+                icon: Icons.handyman_outlined,
               ),
 
               const Spacer(),
@@ -110,24 +115,25 @@ class _RoleSelectionScreenState extends State<RoleSelectionScreen> {
                   onPressed: selectedRole == null
                       ? null // Disable button if nothing selected
                       : () {
-                          // This prints to the 'Run' console in your IDE
-                          print("Selected Role: $selectedRole");
-                          
+
                           // UNCOMMENT THIS WHEN YOU HAVE YOUR NEXT SCREENS:
-                         if (selectedRole == 'provider') {
-          // Navigate to Worker/Provider Screen
-          Navigator.push(
-            context,
-            MaterialPageRoute(
-              builder: (context) => const WorkerProfileDetailsScreen(),
-            ),
-          );
-        } else if (selectedRole == 'customer') {
-          // TODO: Add Customer Screen logic here later
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text("Customer flow coming soon!")),
-          );
-        }
+                          if (selectedRole == 'worker') {
+                            _supabaseService.setUserRole(selectedRole!);
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (context) =>
+                                    const WorkerProfileDetailsScreen(),
+                              ),
+                            );
+                          } else if (selectedRole == 'customer') {
+                            // TODO: Add Customer Screen logic here later
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              const SnackBar(
+                                content: Text("Customer flow coming soon!"),
+                              ),
+                            );
+                          }
                         },
                   style: ElevatedButton.styleFrom(
                     backgroundColor: primaryBrown,
@@ -140,10 +146,7 @@ class _RoleSelectionScreenState extends State<RoleSelectionScreen> {
                   ),
                   child: const Text(
                     "Continue",
-                    style: TextStyle(
-                      fontSize: 18,
-                      fontWeight: FontWeight.w600,
-                    ),
+                    style: TextStyle(fontSize: 18, fontWeight: FontWeight.w600),
                   ),
                 ),
               ),
@@ -154,6 +157,8 @@ class _RoleSelectionScreenState extends State<RoleSelectionScreen> {
       ),
     );
   }
+
+  
 
   // Helper Widget for the Cards
   Widget _buildRoleCard({
@@ -173,10 +178,10 @@ class _RoleSelectionScreenState extends State<RoleSelectionScreen> {
       child: Container(
         padding: const EdgeInsets.all(20),
         decoration: BoxDecoration(
-          color: cardBackground.withOpacity(0.5), 
+          color: cardBackground.withValues(alpha: 0.5),
           borderRadius: BorderRadius.circular(20),
           border: Border.all(
-            color: isSelected ? primaryBrown : primaryBrown.withOpacity(0.5),
+            color: isSelected ? primaryBrown : primaryBrown.withValues(alpha: 0.5),
             width: isSelected ? 2.5 : 1.5,
           ),
         ),
@@ -188,16 +193,12 @@ class _RoleSelectionScreenState extends State<RoleSelectionScreen> {
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
                 border: Border.all(color: primaryBrown, width: 2),
-                color: Colors.transparent, 
+                color: Colors.transparent,
               ),
-              child: Icon(
-                icon,
-                size: 32,
-                color: primaryBrown,
-              ),
+              child: Icon(icon, size: 32, color: primaryBrown),
             ),
             const SizedBox(width: 20),
-            
+
             // Text Content
             Expanded(
               child: Column(
@@ -217,14 +218,14 @@ class _RoleSelectionScreenState extends State<RoleSelectionScreen> {
                     subtitle,
                     style: TextStyle(
                       fontSize: 13,
-                      color: primaryBrown.withOpacity(0.8),
+                      color: primaryBrown.withValues(alpha: 0.8),
                       height: 1.4,
                     ),
                   ),
                 ],
               ),
             ),
-            
+
             // Checkmark if selected
             if (isSelected)
               Icon(Icons.check_circle, color: primaryBrown, size: 24),
