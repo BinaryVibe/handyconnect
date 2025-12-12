@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:uuid/uuid.dart';
 import 'src/models/service.dart'; // import your Service class
-import 'package:supabase_flutter/supabase_flutter.dart';
 
 // void main() async {
 //   WidgetsFlutterBinding.ensureInitialized();

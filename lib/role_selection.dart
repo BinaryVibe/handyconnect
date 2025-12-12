@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'worker_profile_input.dart';
-import 'package:supabase_flutter/supabase_flutter.dart';
 import 'src/providers/user_provider.dart';
 
 // void main() {

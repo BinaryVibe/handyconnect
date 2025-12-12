@@ -1,6 +1,4 @@
-import 'package:flutter/foundation.dart';
 import '../../utils/customer_with_service.dart';
-import '../models/customer.dart';
 import '../models/service.dart';
 import '../models/service_details.dart';
 
