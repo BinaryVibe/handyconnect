@@ -6,7 +6,6 @@ class UserSupabaseService {
 
   Future<void> setUserRole(String role) async {
     try {
-      print(userId);
       await supabase
           .from('profiles')
           .update({'role': role})
