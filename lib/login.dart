@@ -22,6 +22,7 @@ class _LoginScreenState extends State<LoginScreen> {
   final TextEditingController _emailController = TextEditingController();
   final TextEditingController _passwordController = TextEditingController();
   bool _isLoading = false;
+  final UserSupabaseService _userSupabaseService = UserSupabaseService();
 
   // Access the Supabase client
   final _supabase = Supabase.instance.client;
@@ -66,8 +67,8 @@ class _LoginScreenState extends State<LoginScreen> {
       );
 
       late Widget landingPage;
-      // print("User Role: ${response.user?.}");
-      switch (response.user?.role) {
+      final role = await _userSupabaseService.getValue('role');
+      switch (role) {
         case 'worker':
           landingPage = WorkerDashboard();
           break;
@@ -75,11 +76,15 @@ class _LoginScreenState extends State<LoginScreen> {
           landingPage = CustomerDashboard();
           break;
         default:
-          throw UnimplementedError('There is no landing page for this user role.');
+          throw UnimplementedError(
+            'There is no landing page for this user role.',
+          );
       }
 
-      Navigator.pushReplacement(context, MaterialPageRoute(builder: (_) => landingPage));
-
+      Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(builder: (_) => landingPage),
+      );
     } on AuthException catch (error) {
       // --- HANDLE SUPABASE AUTH ERRORS ---
       if (!mounted) return;
