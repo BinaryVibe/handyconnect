@@ -141,7 +141,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
           if (loading)
             Positioned.fill(
               child: Container(
-                color: Colors.black.withOpacity(0.15),
+                color: Colors.black.withValues(alpha: 0.15),
                 child: const Center(
                   child: CircularProgressIndicator(color: kPrimaryColor),
                 ),
@@ -168,7 +168,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
         obscureText: isPassword,
         decoration: InputDecoration(
           hintText: hint,
-          hintStyle: TextStyle(color: kPrimaryColor.withOpacity(0.6)),
+          hintStyle: TextStyle(color: kPrimaryColor.withValues(alpha: 0.6)),
           prefixIcon: Icon(icon, color: kPrimaryColor),
           border: InputBorder.none,
           contentPadding: const EdgeInsets.symmetric(vertical: 18),
