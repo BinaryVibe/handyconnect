@@ -1,29 +1,31 @@
 import 'dart:io'; // Required to handle file system images
 import 'package:flutter/material.dart';
+import 'package:handyconnect/src/providers/user_provider.dart';
+import 'package:handyconnect/src/providers/worker_provider.dart';
 import 'package:image_picker/image_picker.dart'; // Import image_picker
 
 // --- MAIN ENTRY POINT ---
-void main() {
-  runApp(const ServiceApp());
-}
+// void main() {
+//   runApp(const ServiceApp());
+// }
 
-class ServiceApp extends StatelessWidget {
-  const ServiceApp({super.key});
+// class ServiceApp extends StatelessWidget {
+//   const ServiceApp({super.key});
 
-  @override
-  Widget build(BuildContext context) {
-    return MaterialApp(
-      debugShowCheckedModeBanner: false,
-      title: 'Service Hub',
-      theme: ThemeData(
-        primaryColor: const Color(0xFF4E342E),
-        scaffoldBackgroundColor: const Color(0xFFFAFAFA),
-        useMaterial3: true,
-      ),
-      home: const WorkerProfileDetailsScreen(),
-    );
-  }
-}
+//   @override
+//   Widget build(BuildContext context) {
+//     return MaterialApp(
+//       debugShowCheckedModeBanner: false,
+//       title: 'Service Hub',
+//       theme: ThemeData(
+//         primaryColor: const Color(0xFF4E342E),
+//         scaffoldBackgroundColor: const Color(0xFFFAFAFA),
+//         useMaterial3: true,
+//       ),
+//       home: const WorkerProfileDetailsScreen(),
+//     );
+//   }
+// }
 
 // --- WORKER PROFILE DETAILS SCREEN ---
 
@@ -32,7 +34,7 @@ final Color cardBackground = const Color(0xFFD7CCC8);
 final Color scaffoldBackground = const Color(0xFFFAFAFA);
 
 class WorkerProfileDetailsScreen extends StatefulWidget {
-  const WorkerProfileDetailsScreen({Key? key}) : super(key: key);
+  const WorkerProfileDetailsScreen({super.key});
 
   @override
   _WorkerProfileDetailsScreenState createState() => _WorkerProfileDetailsScreenState();
@@ -42,6 +44,8 @@ class _WorkerProfileDetailsScreenState extends State<WorkerProfileDetailsScreen>
   final TextEditingController _professionController = TextEditingController();
   final TextEditingController _skillInputController = TextEditingController();
   final List<String> _skills = [];
+  final UserSupabaseService _userSupabaseService = UserSupabaseService();
+  final WorkerSupabaseService _workerSupabaseService = WorkerSupabaseService();
 
   // Variable to store the actual file picked from device
   File? _profileImage;
@@ -96,9 +100,18 @@ class _WorkerProfileDetailsScreenState extends State<WorkerProfileDetailsScreen>
       return;
     }
     
-    print('Profession: ${_professionController.text}');
-    print('Skills: $_skills');
-    print('Image Path: ${_profileImage!.path}');
+    _userSupabaseService.setAvatarUrl(_profileImage!.path);  
+
+    Map<String, dynamic> workerData = {
+      'profession': _professionController.text,
+      'skills': _skills
+    };
+
+    _workerSupabaseService.insertWorker(workerData);
+
+    // print('Profession: ${_professionController.text}');
+    // print('Skills: $_skills');
+    // print('Image Path: ${_profileImage!.path}');
     
     ScaffoldMessenger.of(context).showSnackBar(
       const SnackBar(content: Text('Profile Saved Successfully!')),
@@ -146,7 +159,7 @@ class _WorkerProfileDetailsScreenState extends State<WorkerProfileDetailsScreen>
                       height: 120,
                       decoration: BoxDecoration(
                         shape: BoxShape.circle,
-                        color: cardBackground.withOpacity(0.5),
+                        color: cardBackground.withValues(alpha: 0.5),
                         border: Border.all(color: primaryBrown, width: 2),
                         // --- UPDATED: Display local file if selected ---
                         image: _profileImage != null
@@ -158,7 +171,7 @@ class _WorkerProfileDetailsScreenState extends State<WorkerProfileDetailsScreen>
                       ),
                       // Show person icon if no image is selected
                       child: _profileImage == null
-                          ? Icon(Icons.person, size: 60, color: primaryBrown.withOpacity(0.5))
+                          ? Icon(Icons.person, size: 60, color: primaryBrown.withValues(alpha: 0.5))
                           : null,
                     ),
                     Container(
@@ -230,12 +243,12 @@ class _WorkerProfileDetailsScreenState extends State<WorkerProfileDetailsScreen>
                     return Chip(
                       label: Text(skill),
                       labelStyle: TextStyle(color: primaryBrown),
-                      backgroundColor: cardBackground.withOpacity(0.5),
+                      backgroundColor: cardBackground.withValues(alpha: 0.5),
                       deleteIcon: Icon(Icons.cancel, size: 18, color: primaryBrown),
                       onDeleted: () => _deleteSkill(skill),
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(20),
-                        side: BorderSide(color: primaryBrown.withOpacity(0.5)),
+                        side: BorderSide(color: primaryBrown.withValues(alpha: 0.5)),
                       ),
                     );
                   }).toList(),
@@ -286,10 +299,10 @@ class _WorkerProfileDetailsScreenState extends State<WorkerProfileDetailsScreen>
       cursorColor: primaryBrown,
       decoration: InputDecoration(
         labelText: label,
-        labelStyle: TextStyle(color: primaryBrown.withOpacity(0.6)),
+        labelStyle: TextStyle(color: primaryBrown.withValues(alpha: 0.6)),
         prefixIcon: Icon(icon, color: primaryBrown),
         filled: true,
-        fillColor: cardBackground.withOpacity(0.3),
+        fillColor: cardBackground.withValues(alpha: 0.3),
         contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 18),
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(15),
@@ -297,7 +310,7 @@ class _WorkerProfileDetailsScreenState extends State<WorkerProfileDetailsScreen>
         ),
         enabledBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(15),
-          borderSide: BorderSide(color: primaryBrown.withOpacity(0.5), width: 1.5),
+          borderSide: BorderSide(color: primaryBrown.withValues(alpha: 0.5), width: 1.5),
         ),
         focusedBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(15),
