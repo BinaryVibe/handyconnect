@@ -1,13 +1,15 @@
 import 'package:flutter/material.dart';
 import 'package:handyconnect/customer_dashboard.dart';
+import 'package:handyconnect/src/providers/user_provider.dart';
 import 'package:handyconnect/worker_dashboard.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'signup.dart';
 
 // --- Color and Style Constants ---
-const Color kPrimaryColor = Color(0xFF5E453D);
+const Color kPrimaryColor = Color(0xFF4A2E1E);
 const Color kSecondaryColor = Color(0xFFC07B4D);
-const Color kBackgroundColor = Color(0xFFFBFBFB);
+const Color kBackgroundColor = Color(0xFFF7F2EF);
+const Color kFieldColor = Color(0xFFE9DFD8);
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -117,194 +119,195 @@ class _LoginScreenState extends State<LoginScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: kBackgroundColor,
-      body: Stack(
-        children: [
-          // 1. Main Content
-          SafeArea(
-            child: SingleChildScrollView(
-              padding: const EdgeInsets.symmetric(horizontal: 32.0),
-              child: ConstrainedBox(
-                constraints: BoxConstraints(
-                  minHeight: MediaQuery.of(context).size.height -
-                      MediaQuery.of(context).padding.top,
-                ),
-                child: IntrinsicHeight(
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: <Widget>[
-                      const SizedBox(height: 50),
-                      // --- Logo/Icon Section ---
-                      const Icon(
-                        Icons.settings_applications,
-                        size: 60,
-                        color: kPrimaryColor,
-                      ),
-                      const SizedBox(height: 8),
-                      const Text(
-                        'Service Hub',
-                        style: TextStyle(
-                          fontSize: 20,
-                          fontWeight: FontWeight.w500,
-                          color: kPrimaryColor,
+      appBar: AppBar(
+        backgroundColor: kPrimaryColor,
+        elevation: 0,
+        centerTitle: true,
+        toolbarHeight: 100.0,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.vertical(bottom: Radius.circular(30)),
+        ),
+        title: const Text(
+          "Login",
+          style: TextStyle(color: kFieldColor, fontSize: 30),
+        ),
+      ),
+      body: Center(
+        child: Stack(
+          children: [
+            // 1. Main Content
+            SafeArea(
+              child: SingleChildScrollView(
+                padding: const EdgeInsets.symmetric(horizontal: 32.0),
+                child: ConstrainedBox(
+                  constraints: BoxConstraints(
+                    // minHeight: MediaQuery.of(context).size.height -
+                    //     MediaQuery.of(context).padding.top,
+                    maxWidth: 600,
+                  ),
+                  child: IntrinsicHeight(
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: <Widget>[
+                        const SizedBox(height: 50),
+
+                        // --- Welcome Text ---
+                        const Text(
+                          'Welcome Back!',
+                          style: TextStyle(
+                            fontSize: 32,
+                            fontWeight: FontWeight.w800,
+                            color: Colors.black,
+                          ),
                         ),
-                      ),
-                      const SizedBox(height: 50),
+                        const SizedBox(height: 40),
 
-                      // --- Welcome Text ---
-                      const Text(
-                        'Welcome Back!',
-                        style: TextStyle(
-                          fontSize: 32,
-                          fontWeight: FontWeight.w800,
-                          color: Colors.black,
+                        // --- Email Input ---
+                        _buildRoundedInputField(
+                          controller: _emailController,
+                          hintText: 'Email',
+                          icon: Icons.person_outline,
+                          keyboardType: TextInputType.emailAddress,
                         ),
-                      ),
-                      const SizedBox(height: 40),
+                        const SizedBox(height: 20),
 
-                      // --- Email Input ---
-                      _buildRoundedInputField(
-                        controller: _emailController,
-                        hintText: 'Email',
-                        icon: Icons.person_outline,
-                        keyboardType: TextInputType.emailAddress,
-                      ),
-                      const SizedBox(height: 20),
+                        // --- Password Input ---
+                        _buildRoundedInputField(
+                          controller: _passwordController,
+                          hintText: 'Password',
+                          icon: Icons.lock_outline,
+                          isPassword: true,
+                        ),
 
-                      // --- Password Input ---
-                      _buildRoundedInputField(
-                        controller: _passwordController,
-                        hintText: 'Password',
-                        icon: Icons.lock_outline,
-                        isPassword: true,
-                      ),
-
-                      // --- Forgot Password Link ---
-                      Padding(
-                        padding: const EdgeInsets.only(top: 12.0),
-                        child: Align(
-                          alignment: Alignment.centerRight,
-                          child: TextButton(
-                            onPressed: () {
-                              // TODO: Implement Reset Password Logic
-                            },
-                            child: const Text(
-                              'Forgot Password?',
-                              style: TextStyle(
-                                color: kSecondaryColor,
-                                fontSize: 14,
-                                fontWeight: FontWeight.w500,
+                        // --- Forgot Password Link ---
+                        Padding(
+                          padding: const EdgeInsets.only(top: 12.0),
+                          child: Align(
+                            alignment: Alignment.centerRight,
+                            child: TextButton(
+                              onPressed: () {
+                                // TODO: Implement Reset Password Logic
+                              },
+                              child: const Text(
+                                'Forgot Password?',
+                                style: TextStyle(
+                                  color: kSecondaryColor,
+                                  fontSize: 14,
+                                  fontWeight: FontWeight.w500,
+                                ),
                               ),
                             ),
                           ),
                         ),
-                      ),
-                      const SizedBox(height: 40),
+                        const SizedBox(height: 40),
 
-                      // --- Log In Button ---
-                      SizedBox(
-                        width: double.infinity,
-                        height: 58,
-                        child: ElevatedButton(
-                          onPressed: _isLoading ? null : _handleLogin,
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: kPrimaryColor,
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(30.0),
+                        // --- Log In Button ---
+                        SizedBox(
+                          width: double.infinity,
+                          height: 58,
+                          child: ElevatedButton(
+                            onPressed: _isLoading ? null : _handleLogin,
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: kPrimaryColor,
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(30.0),
+                              ),
+                              elevation: 5,
+                              shadowColor: kPrimaryColor.withValues(alpha: 0.5),
                             ),
-                            elevation: 5,
-                            shadowColor: kPrimaryColor.withValues(alpha: 0.5),
-                          ),
-                          child: const Text(
-                            'Log In',
-                            style: TextStyle(
-                              fontSize: 20,
-                              fontWeight: FontWeight.bold,
-                              color: Colors.white,
+                            child: const Text(
+                              'Log In',
+                              style: TextStyle(
+                                fontSize: 20,
+                                fontWeight: FontWeight.bold,
+                                color: Colors.white,
+                              ),
                             ),
                           ),
                         ),
-                      ),
-                      const SizedBox(height: 50),
+                        const SizedBox(height: 50),
 
-                      // --- Sign Up Link ---
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          const Text(
-                            "Don't have an account?",
-                            style: TextStyle(
-                              fontSize: 15,
-                              color: Colors.black54,
+                        // --- Sign Up Link ---
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            const Text(
+                              "Don't have an account?",
+                              style: TextStyle(
+                                fontSize: 15,
+                                color: Colors.black54,
+                              ),
                             ),
-                          ),
-                          TextButton(
-                           onPressed: () {
+                            TextButton(
+                              onPressed: () {
                                 // Navigate to Sign Up Screen
                                 Navigator.push(
                                   context,
-                                  MaterialPageRoute(builder: (context) => const SignUpScreen()),
+                                  MaterialPageRoute(
+                                    builder: (context) => const SignUpScreen(),
+                                  ),
                                 );
                               },
-                            child: const Text(
-                              'Sign Up',
-                              style: TextStyle(
-                                fontSize: 15,
-                                fontWeight: FontWeight.bold,
-                                color: kSecondaryColor,
-                                decoration: TextDecoration.underline,
+                              child: const Text(
+                                'Sign Up',
+                                style: TextStyle(
+                                  fontSize: 15,
+                                  fontWeight: FontWeight.bold,
+                                  color: kSecondaryColor,
+                                ),
                               ),
+                            ),
+                          ],
+                        ),
+                        const Spacer(),
+                        const SizedBox(height: 20),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+            ),
+
+            // 2. Loading Indicator Overlay
+            if (_isLoading)
+              Positioned.fill(
+                child: Container(
+                  color: Colors.black.withValues(alpha: 0.15),
+                  child: Center(
+                    child: Container(
+                      padding: const EdgeInsets.all(30),
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        borderRadius: BorderRadius.circular(15),
+                        boxShadow: const [
+                          BoxShadow(
+                            color: Colors.black26,
+                            blurRadius: 20,
+                            offset: Offset(0, 4),
+                          ),
+                        ],
+                      ),
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          const CircularProgressIndicator(color: kPrimaryColor),
+                          const SizedBox(height: 15),
+                          const Text(
+                            "Logging in...",
+                            style: TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.w600,
+                              color: kPrimaryColor,
                             ),
                           ),
                         ],
                       ),
-                      const Spacer(),
-                      const SizedBox(height: 20),
-                    ],
-                  ),
-                ),
-              ),
-            ),
-          ),
-
-          // 2. Loading Indicator Overlay
-          if (_isLoading)
-            Positioned.fill(
-              child: Container(
-                color: Colors.black.withValues(alpha: 0.15),
-                child: Center(
-                  child: Container(
-                    padding: const EdgeInsets.all(30),
-                    decoration: BoxDecoration(
-                      color: Colors.white,
-                      borderRadius: BorderRadius.circular(15),
-                      boxShadow: const [
-                        BoxShadow(
-                          color: Colors.black26,
-                          blurRadius: 20,
-                          offset: Offset(0, 4),
-                        )
-                      ],
-                    ),
-                    child: Column(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        const CircularProgressIndicator(color: kPrimaryColor),
-                        const SizedBox(height: 15),
-                        const Text(
-                          "Logging in...",
-                          style: TextStyle(
-                            fontSize: 16,
-                            fontWeight: FontWeight.w600,
-                            color: kPrimaryColor,
-                          ),
-                        ),
-                      ],
                     ),
                   ),
                 ),
               ),
-            ),
-        ],
+          ],
+        ),
       ),
     );
   }
