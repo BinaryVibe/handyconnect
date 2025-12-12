@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'worker_profile_input.dart';
+import 'customer_profile_input.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'src/providers/user_provider.dart';
 
@@ -117,24 +118,20 @@ class _RoleSelectionScreenState extends State<RoleSelectionScreen> {
                       : () {
 
                           // UNCOMMENT THIS WHEN YOU HAVE YOUR NEXT SCREENS:
-                          if (selectedRole == 'worker') {
-                            _supabaseService.setUserRole(selectedRole!);
+                          if (selectedRole == 'customer') {
+            // Navigate to the NEW Customer Profile Screen
                             Navigator.push(
-                              context,
-                              MaterialPageRoute(
-                                builder: (context) =>
-                                    const WorkerProfileDetailsScreen(),
-                              ),
+                              context, 
+                              MaterialPageRoute(builder: (_) => const CustomerProfileScreen())
                             );
-                          } else if (selectedRole == 'customer') {
-                            // TODO: Add Customer Screen logic here later
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              const SnackBar(
-                                content: Text("Customer flow coming soon!"),
-                              ),
+                          } else {
+                            // Navigate to the Worker Detail Screen (previously generated)
+                            Navigator.push(
+                              context, 
+                              MaterialPageRoute(builder: (_) => const WorkerProfileDetailsScreen())
                             );
                           }
-                        },
+                      },
                   style: ElevatedButton.styleFrom(
                     backgroundColor: primaryBrown,
                     foregroundColor: Colors.white,
