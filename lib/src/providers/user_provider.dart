@@ -26,7 +26,13 @@ class UserSupabaseService {
     }
   }
 
-  // Future<String> getValue(String field) {
-
-  // }
+  Future<String> getValue(String field) async {
+    try {
+      final response = await supabase.from('profiles').select(field).eq('id', userId as String).limit(1).single();
+      return response['role'];
+    }
+    catch (e) {
+      throw Exception(e.toString());
+    }
+  }
 }
