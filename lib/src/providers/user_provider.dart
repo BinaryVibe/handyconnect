@@ -26,4 +26,8 @@ class UserSupabaseService {
       throw Exception(e.toString());
     }
   }
+
+  // Future<String> getValue(String field) {
+
+  // }
 }
