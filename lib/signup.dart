@@ -36,10 +36,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
         centerTitle: true,
         title: const Text(
           "Create Account",
-          style: TextStyle(
-            color: kPrimaryColor,
-            fontWeight: FontWeight.bold,
-          ),
+          style: TextStyle(color: kPrimaryColor, fontWeight: FontWeight.bold),
         ),
       ),
 
@@ -123,7 +120,9 @@ class _SignUpScreenState extends State<SignUpScreen> {
                   onPressed: () {
                     Navigator.pushReplacement(
                       context,
-                      MaterialPageRoute(builder: (context) => const LoginScreen()),
+                      MaterialPageRoute(
+                        builder: (context) => const LoginScreen(),
+                      ),
                     );
                   },
                   child: const Text(
@@ -133,7 +132,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
                       decoration: TextDecoration.underline,
                     ),
                   ),
-                )
+                ),
               ],
             ),
           ),
@@ -146,7 +145,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
                   child: CircularProgressIndicator(color: kPrimaryColor),
                 ),
               ),
-            )
+            ),
         ],
       ),
     );
@@ -199,7 +198,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
     setState(() => loading = true);
 
     try {
-      final response = await _supabase.auth.signUp(
+      await _supabase.auth.signUp(
         email: email.text.trim(),
         password: pass.text.trim(),
         data: {
@@ -217,7 +216,6 @@ class _SignUpScreenState extends State<SignUpScreen> {
         context,
         MaterialPageRoute(builder: (_) => const RoleSelectionScreen()),
       );
-      
     } on AuthException catch (e) {
       _showError(e.message);
     } catch (e) {
@@ -228,11 +226,8 @@ class _SignUpScreenState extends State<SignUpScreen> {
   }
 
   void _showError(String msg) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(msg),
-        backgroundColor: Colors.red,
-      ),
-    );
+    ScaffoldMessenger.of(
+      context,
+    ).showSnackBar(SnackBar(content: Text(msg), backgroundColor: Colors.red));
   }
 }
