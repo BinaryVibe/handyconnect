@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:handyconnect/customer_dashboard.dart';
+import 'package:handyconnect/worker_dashboard.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'signup.dart';
 
@@ -61,8 +63,20 @@ class _LoginScreenState extends State<LoginScreen> {
         ),
       );
 
-      // TODO: Navigate to your Home Screen here
-      // Navigator.pushReplacement(context, MaterialPageRoute(builder: (_) => HomeScreen()));
+      late Widget landingPage;
+      // print("User Role: ${response.user?.}");
+      switch (response.user?.role) {
+        case 'worker':
+          landingPage = WorkerDashboard();
+          break;
+        case 'customer':
+          landingPage = CustomerDashboard();
+          break;
+        default:
+          throw UnimplementedError('There is no landing page for this user role.');
+      }
+
+      Navigator.pushReplacement(context, MaterialPageRoute(builder: (_) => landingPage));
 
     } on AuthException catch (error) {
       // --- HANDLE SUPABASE AUTH ERRORS ---
@@ -198,7 +212,7 @@ class _LoginScreenState extends State<LoginScreen> {
                               borderRadius: BorderRadius.circular(30.0),
                             ),
                             elevation: 5,
-                            shadowColor: kPrimaryColor.withOpacity(0.5),
+                            shadowColor: kPrimaryColor.withValues(alpha: 0.5),
                           ),
                           child: const Text(
                             'Log In',
@@ -256,7 +270,7 @@ class _LoginScreenState extends State<LoginScreen> {
           if (_isLoading)
             Positioned.fill(
               child: Container(
-                color: Colors.black.withOpacity(0.15),
+                color: Colors.black.withValues(alpha: 0.15),
                 child: Center(
                   child: Container(
                     padding: const EdgeInsets.all(30),
@@ -308,7 +322,7 @@ class _LoginScreenState extends State<LoginScreen> {
         borderRadius: BorderRadius.circular(30),
         boxShadow: [
           BoxShadow(
-            color: Colors.grey.withOpacity(0.1),
+            color: Colors.grey.withValues(alpha: 0.1),
             spreadRadius: 2,
             blurRadius: 5,
             offset: const Offset(0, 3),
