@@ -1,5 +1,6 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
+import 'package:handyconnect/login.dart';
 import 'package:image_picker/image_picker.dart';
 
 // --- Theme Colors ---
@@ -20,16 +21,18 @@ class _CustomerProfileScreenState extends State<CustomerProfileScreen> {
 
   Future<void> _pickImage() async {
     try {
-      final XFile? pickedFile = await _picker.pickImage(source: ImageSource.gallery);
+      final XFile? pickedFile = await _picker.pickImage(
+        source: ImageSource.gallery,
+      );
       if (pickedFile != null) {
         setState(() {
           _profileImage = File(pickedFile.path);
         });
       }
     } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Error: $e')),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('Error: $e')));
     }
   }
 
@@ -46,9 +49,14 @@ class _CustomerProfileScreenState extends State<CustomerProfileScreen> {
     // TODO: Upload logic here
     ScaffoldMessenger.of(context).showSnackBar(
       const SnackBar(
-        content: Text('Profile Setup Complete!'), 
-        backgroundColor: Colors.green
+        content: Text('Profile Setup Complete!'),
+        backgroundColor: Colors.green,
       ),
+    );
+
+    Navigator.push(
+      context,
+      MaterialPageRoute(builder: (context) => const LoginScreen()),
     );
   }
 
@@ -56,7 +64,7 @@ class _CustomerProfileScreenState extends State<CustomerProfileScreen> {
   Widget build(BuildContext context) {
     // 1. Get total screen width using MediaQuery
     final double screenWidth = MediaQuery.of(context).size.width;
-    
+
     // 2. Define a threshold for "Mobile" vs "Desktop/Web"
     final bool isWideScreen = screenWidth > 600;
 
@@ -88,10 +96,10 @@ class _CustomerProfileScreenState extends State<CustomerProfileScreen> {
                     borderRadius: BorderRadius.circular(20),
                     boxShadow: [
                       BoxShadow(
-                        color: Colors.black.withOpacity(0.05),
+                        color: Colors.black.withValues(alpha: 0.05),
                         blurRadius: 20,
                         spreadRadius: 5,
-                      )
+                      ),
                     ],
                   )
                 : null,
@@ -99,7 +107,7 @@ class _CustomerProfileScreenState extends State<CustomerProfileScreen> {
             padding: const EdgeInsets.all(32.0),
             // Ensure full height on mobile, or wrap content on desktop
             height: isWideScreen ? null : double.infinity,
-            
+
             child: SingleChildScrollView(
               child: Column(
                 mainAxisSize: MainAxisSize.min, // Shrink wrap on desktop
@@ -122,7 +130,7 @@ class _CustomerProfileScreenState extends State<CustomerProfileScreen> {
                     textAlign: TextAlign.center,
                     style: TextStyle(
                       fontSize: 16,
-                      color: primaryBrown.withOpacity(0.7),
+                      color: primaryBrown.withValues(alpha: 0.7),
                     ),
                   ),
 
@@ -139,7 +147,7 @@ class _CustomerProfileScreenState extends State<CustomerProfileScreen> {
                           height: 180,
                           decoration: BoxDecoration(
                             shape: BoxShape.circle,
-                            color: cardBackground.withOpacity(0.4),
+                            color: cardBackground.withValues(alpha: 0.4),
                             border: Border.all(color: primaryBrown, width: 3),
                             image: _profileImage != null
                                 ? DecorationImage(
@@ -152,7 +160,7 @@ class _CustomerProfileScreenState extends State<CustomerProfileScreen> {
                               ? Icon(
                                   Icons.person,
                                   size: 90,
-                                  color: primaryBrown.withOpacity(0.4),
+                                  color: primaryBrown.withValues(alpha: 0.4),
                                 )
                               : null,
                         ),
@@ -162,9 +170,16 @@ class _CustomerProfileScreenState extends State<CustomerProfileScreen> {
                           decoration: BoxDecoration(
                             color: primaryBrown,
                             shape: BoxShape.circle,
-                            border: Border.all(color: scaffoldBackground, width: 3),
+                            border: Border.all(
+                              color: scaffoldBackground,
+                              width: 3,
+                            ),
                           ),
-                          child: const Icon(Icons.camera_alt, color: Colors.white, size: 28),
+                          child: const Icon(
+                            Icons.camera_alt,
+                            color: Colors.white,
+                            size: 28,
+                          ),
                         ),
                       ],
                     ),
@@ -189,13 +204,13 @@ class _CustomerProfileScreenState extends State<CustomerProfileScreen> {
                       child: const Text(
                         "Continue",
                         style: TextStyle(
-                          fontSize: 18, 
-                          fontWeight: FontWeight.w600
+                          fontSize: 18,
+                          fontWeight: FontWeight.w600,
                         ),
                       ),
                     ),
                   ),
-                  
+
                   // Bottom spacing for mobile scrolling
                   if (!isWideScreen) const SizedBox(height: 20),
                 ],
