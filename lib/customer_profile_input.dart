@@ -1,6 +1,7 @@
-import 'dart:io';
+import 'dart:typed_data'; // Bytes handle karne ke liye
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 
 // --- Theme Colors ---
 final Color primaryBrown = const Color(0xFF4E342E);
@@ -15,26 +16,35 @@ class CustomerProfileScreen extends StatefulWidget {
 }
 
 class _CustomerProfileScreenState extends State<CustomerProfileScreen> {
-  File? _profileImage;
+  // Change 1: Hum 'File' nahi, balki 'Bytes' store karenge (Works on Web & Mobile)
+  Uint8List? _imageBytes; 
+  XFile? _pickedFile; // Metadata (name/ext) ke liye
+  
   final ImagePicker _picker = ImagePicker();
+  bool _isLoading = false;
 
   Future<void> _pickImage() async {
     try {
       final XFile? pickedFile = await _picker.pickImage(source: ImageSource.gallery);
+      
       if (pickedFile != null) {
+        // Change 2: Read file as bytes immediately
+        final Uint8List bytes = await pickedFile.readAsBytes();
+        
         setState(() {
-          _profileImage = File(pickedFile.path);
+          _pickedFile = pickedFile;
+          _imageBytes = bytes;
         });
       }
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Error: $e')),
+        SnackBar(content: Text('Error picking image: $e')),
       );
     }
   }
 
-  void _saveProfile() {
-    if (_profileImage == null) {
+  Future<void> _saveProfile() async {
+    if (_imageBytes == null || _pickedFile == null) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
           content: Text('Please upload a profile picture to continue.'),
@@ -43,21 +53,76 @@ class _CustomerProfileScreenState extends State<CustomerProfileScreen> {
       );
       return;
     }
-    // TODO: Upload logic here
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('Profile Setup Complete!'), 
-        backgroundColor: Colors.green
-      ),
-    );
+
+    setState(() {
+      _isLoading = true;
+    });
+
+    try {
+      final user = Supabase.instance.client.auth.currentUser;
+      if (user == null) throw "User not logged in!";
+      
+      final String userId = user.id;
+      
+      // Get file extension from the picked file name
+      final String fileExt = _pickedFile!.name.split('.').last; 
+      final String filePath = '$userId/profile_pic.$fileExt';
+
+      // Change 3: Use 'uploadBinary' (Universal method)
+      // Ye method bytes accept karta hai jo mobile aur web dono pe hote hain
+      await Supabase.instance.client.storage
+          .from('avatars')
+          .uploadBinary(
+            filePath,
+            _imageBytes!,
+            fileOptions: FileOptions(
+              upsert: true, 
+              contentType: 'image/$fileExt', // Browser ko batana zaroori hai ke ye image hai
+            ),
+          );
+
+      // Get Public URL
+      final String imageUrl = Supabase.instance.client.storage
+          .from('avatars')
+          .getPublicUrl(filePath);
+
+      // Update Database
+      await Supabase.instance.client
+          .from('profiles')
+          .update({
+            'avatar_url': imageUrl,
+            'updated_at': DateTime.now().toIso8601String(),
+          })
+          .eq('id', userId);
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Profile Setup Complete!'), 
+            backgroundColor: Colors.green
+          ),
+        );
+        // Navigate to next screen logic here...
+      }
+
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Error uploading: $e'), backgroundColor: Colors.red),
+        );
+      }
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+        });
+      }
+    }
   }
 
   @override
   Widget build(BuildContext context) {
-    // 1. Get total screen width using MediaQuery
     final double screenWidth = MediaQuery.of(context).size.width;
-    
-    // 2. Define a threshold for "Mobile" vs "Desktop/Web"
     final bool isWideScreen = screenWidth > 600;
 
     return Scaffold(
@@ -76,12 +141,9 @@ class _CustomerProfileScreenState extends State<CustomerProfileScreen> {
         ),
       ),
       body: Center(
-        // 3. ConstrainedBox forces the content to never exceed 600px width.
-        //    On wide screens, this creates the "gaps" on the sides automatically.
         child: ConstrainedBox(
           constraints: const BoxConstraints(maxWidth: 600),
           child: Container(
-            // Optional: Add a shadow/card effect ONLY on wide screens to make it pop
             decoration: isWideScreen
                 ? BoxDecoration(
                     color: Colors.white,
@@ -95,17 +157,14 @@ class _CustomerProfileScreenState extends State<CustomerProfileScreen> {
                     ],
                   )
                 : null,
-            // Add padding inside the container
             padding: const EdgeInsets.all(32.0),
-            // Ensure full height on mobile, or wrap content on desktop
             height: isWideScreen ? null : double.infinity,
             
             child: SingleChildScrollView(
               child: Column(
-                mainAxisSize: MainAxisSize.min, // Shrink wrap on desktop
+                mainAxisSize: MainAxisSize.min,
                 crossAxisAlignment: CrossAxisAlignment.center,
                 children: [
-                  // For mobile, we might want some top spacing
                   if (!isWideScreen) const SizedBox(height: 40),
 
                   Text(
@@ -141,14 +200,15 @@ class _CustomerProfileScreenState extends State<CustomerProfileScreen> {
                             shape: BoxShape.circle,
                             color: cardBackground.withOpacity(0.4),
                             border: Border.all(color: primaryBrown, width: 3),
-                            image: _profileImage != null
+                            // Change 4: Display using Image.memory (Universal)
+                            image: _imageBytes != null
                                 ? DecorationImage(
-                                    image: FileImage(_profileImage!),
+                                    image: MemoryImage(_imageBytes!),
                                     fit: BoxFit.cover,
                                   )
                                 : null,
                           ),
-                          child: _profileImage == null
+                          child: _imageBytes == null
                               ? Icon(
                                   Icons.person,
                                   size: 90,
@@ -156,7 +216,6 @@ class _CustomerProfileScreenState extends State<CustomerProfileScreen> {
                                 )
                               : null,
                         ),
-                        // Camera Badge
                         Container(
                           padding: const EdgeInsets.all(12),
                           decoration: BoxDecoration(
@@ -177,7 +236,7 @@ class _CustomerProfileScreenState extends State<CustomerProfileScreen> {
                     width: double.infinity,
                     height: 55,
                     child: ElevatedButton(
-                      onPressed: _saveProfile,
+                      onPressed: _isLoading ? null : _saveProfile,
                       style: ElevatedButton.styleFrom(
                         backgroundColor: primaryBrown,
                         foregroundColor: Colors.white,
@@ -186,17 +245,22 @@ class _CustomerProfileScreenState extends State<CustomerProfileScreen> {
                         ),
                         elevation: 5,
                       ),
-                      child: const Text(
-                        "Continue",
-                        style: TextStyle(
-                          fontSize: 18, 
-                          fontWeight: FontWeight.w600
-                        ),
-                      ),
+                      child: _isLoading 
+                        ? const SizedBox(
+                            height: 24, 
+                            width: 24, 
+                            child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2)
+                          )
+                        : const Text(
+                            "Continue",
+                            style: TextStyle(
+                              fontSize: 18, 
+                              fontWeight: FontWeight.w600
+                            ),
+                          ),
                     ),
                   ),
                   
-                  // Bottom spacing for mobile scrolling
                   if (!isWideScreen) const SizedBox(height: 20),
                 ],
               ),
