@@ -1,31 +1,9 @@
-import 'dart:io'; // Required to handle file system images
+import 'dart:typed_data'; // Required for Web/Mobile bytes
 import 'package:flutter/material.dart';
 import 'package:handyconnect/src/providers/user_provider.dart';
 import 'package:handyconnect/src/providers/worker_provider.dart';
-import 'package:image_picker/image_picker.dart'; // Import image_picker
-
-// --- MAIN ENTRY POINT ---
-// void main() {
-//   runApp(const ServiceApp());
-// }
-
-// class ServiceApp extends StatelessWidget {
-//   const ServiceApp({super.key});
-
-//   @override
-//   Widget build(BuildContext context) {
-//     return MaterialApp(
-//       debugShowCheckedModeBanner: false,
-//       title: 'Service Hub',
-//       theme: ThemeData(
-//         primaryColor: const Color(0xFF4E342E),
-//         scaffoldBackgroundColor: const Color(0xFFFAFAFA),
-//         useMaterial3: true,
-//       ),
-//       home: const WorkerProfileDetailsScreen(),
-//     );
-//   }
-// }
+import 'package:image_picker/image_picker.dart';
+import 'package:supabase_flutter/supabase_flutter.dart'; // Required for Storage
 
 // --- WORKER PROFILE DETAILS SCREEN ---
 
@@ -47,9 +25,11 @@ class _WorkerProfileDetailsScreenState extends State<WorkerProfileDetailsScreen>
   final UserSupabaseService _userSupabaseService = UserSupabaseService();
   final WorkerSupabaseService _workerSupabaseService = WorkerSupabaseService();
 
-  // Variable to store the actual file picked from device
-  File? _profileImage;
+  // --- CHANGED: Use Bytes for Cross-Platform (Web/Mobile) ---
+  Uint8List? _imageBytes;
+  XFile? _pickedFile; 
   final ImagePicker _picker = ImagePicker();
+  bool _isLoading = false; // Loading state for upload
 
   @override
   void dispose() {
@@ -74,15 +54,18 @@ class _WorkerProfileDetailsScreenState extends State<WorkerProfileDetailsScreen>
     });
   }
 
-  // --- NEW: Actual Function to Pick Image ---
+  // --- UPDATED: Universal Image Picker ---
   Future<void> _pickImage() async {
     try {
-      // Pick an image from the gallery
       final XFile? pickedFile = await _picker.pickImage(source: ImageSource.gallery);
       
       if (pickedFile != null) {
+        // Read as bytes immediately (works on Web and Mobile)
+        final Uint8List bytes = await pickedFile.readAsBytes();
+        
         setState(() {
-          _profileImage = File(pickedFile.path);
+          _pickedFile = pickedFile;
+          _imageBytes = bytes;
         });
       }
     } catch (e) {
@@ -92,30 +75,79 @@ class _WorkerProfileDetailsScreenState extends State<WorkerProfileDetailsScreen>
     }
   }
 
-  void _saveProfile() {
-    if (_profileImage == null) {
+  // --- UPDATED: Upload to Bucket & Save URL ---
+  Future<void> _saveProfile() async {
+    // 1. Validation
+    if (_imageBytes == null || _pickedFile == null) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Please select a profile picture first!')),
       );
       return;
     }
-    
-    _userSupabaseService.setAvatarUrl(_profileImage!.path);  
 
-    Map<String, dynamic> workerData = {
-      'profession': _professionController.text,
-      'skills': _skills
-    };
+    setState(() {
+      _isLoading = true;
+    });
 
-    _workerSupabaseService.insertWorker(workerData);
+    try {
+      // 2. Get User ID
+      final user = Supabase.instance.client.auth.currentUser;
+      if (user == null) throw "User not authenticated";
+      final String userId = user.id;
 
-    // print('Profession: ${_professionController.text}');
-    // print('Skills: $_skills');
-    // print('Image Path: ${_profileImage!.path}');
-    
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('Profile Saved Successfully!')),
-    );
+      // 3. Prepare File Path
+      final String fileExt = _pickedFile!.name.split('.').last;
+      final String filePath = '$userId/profile.$fileExt'; // e.g., "user123/profile.jpg"
+
+      // 4. Upload to Supabase Storage ('avatars' bucket)
+      await Supabase.instance.client.storage
+          .from('avatars')
+          .uploadBinary(
+            filePath,
+            _imageBytes!,
+            fileOptions: FileOptions(
+              upsert: true,
+              contentType: 'image/$fileExt', // Important for Web
+            ),
+          );
+
+      // 5. Get Public URL
+      final String imageUrl = Supabase.instance.client.storage
+          .from('avatars')
+          .getPublicUrl(filePath);
+
+      // 6. Save URL to Database using your existing Services
+      // passing the 'imageUrl' instead of local path
+      await _userSupabaseService.setAvatarUrl(imageUrl); 
+
+      Map<String, dynamic> workerData = {
+        'profession': _professionController.text,
+        'skills': _skills,
+        // If your worker table also needs the image, add it here:
+        // 'image_url': imageUrl 
+      };
+
+      await _workerSupabaseService.insertWorker(workerData);
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Profile Saved Successfully!'), backgroundColor: Colors.green),
+        );
+      }
+
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Error saving profile: $e'), backgroundColor: Colors.red),
+        );
+      }
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+        });
+      }
+    }
   }
 
   @override
@@ -159,19 +191,18 @@ class _WorkerProfileDetailsScreenState extends State<WorkerProfileDetailsScreen>
                       height: 120,
                       decoration: BoxDecoration(
                         shape: BoxShape.circle,
-                        color: cardBackground.withValues(alpha: 0.5),
+                        color: cardBackground.withOpacity(0.5),
                         border: Border.all(color: primaryBrown, width: 2),
-                        // --- UPDATED: Display local file if selected ---
-                        image: _profileImage != null
+                        // --- UPDATED: Use MemoryImage for Bytes ---
+                        image: _imageBytes != null
                             ? DecorationImage(
-                                image: FileImage(_profileImage!), 
+                                image: MemoryImage(_imageBytes!), 
                                 fit: BoxFit.cover,
                               )
                             : null,
                       ),
-                      // Show person icon if no image is selected
-                      child: _profileImage == null
-                          ? Icon(Icons.person, size: 60, color: primaryBrown.withValues(alpha: 0.5))
+                      child: _imageBytes == null
+                          ? Icon(Icons.person, size: 60, color: primaryBrown.withOpacity(0.5))
                           : null,
                     ),
                     Container(
@@ -243,12 +274,12 @@ class _WorkerProfileDetailsScreenState extends State<WorkerProfileDetailsScreen>
                     return Chip(
                       label: Text(skill),
                       labelStyle: TextStyle(color: primaryBrown),
-                      backgroundColor: cardBackground.withValues(alpha: 0.5),
+                      backgroundColor: cardBackground.withOpacity(0.5),
                       deleteIcon: Icon(Icons.cancel, size: 18, color: primaryBrown),
                       onDeleted: () => _deleteSkill(skill),
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(20),
-                        side: BorderSide(color: primaryBrown.withValues(alpha: 0.5)),
+                        side: BorderSide(color: primaryBrown.withOpacity(0.5)),
                       ),
                     );
                   }).toList(),
@@ -261,7 +292,7 @@ class _WorkerProfileDetailsScreenState extends State<WorkerProfileDetailsScreen>
                 width: double.infinity,
                 height: 55,
                 child: ElevatedButton(
-                  onPressed: _saveProfile,
+                  onPressed: _isLoading ? null : _saveProfile, // Disable while loading
                   style: ElevatedButton.styleFrom(
                     backgroundColor: primaryBrown,
                     foregroundColor: Colors.white,
@@ -270,13 +301,19 @@ class _WorkerProfileDetailsScreenState extends State<WorkerProfileDetailsScreen>
                     ),
                     elevation: 3,
                   ),
-                  child: const Text(
-                    "Save Profile",
-                    style: TextStyle(
-                      fontSize: 18,
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
+                  child: _isLoading 
+                    ? const SizedBox(
+                        height: 24, 
+                        width: 24, 
+                        child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2)
+                      )
+                    : const Text(
+                        "Save Profile",
+                        style: TextStyle(
+                          fontSize: 18,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
                 ),
               ),
             ],
@@ -299,10 +336,10 @@ class _WorkerProfileDetailsScreenState extends State<WorkerProfileDetailsScreen>
       cursorColor: primaryBrown,
       decoration: InputDecoration(
         labelText: label,
-        labelStyle: TextStyle(color: primaryBrown.withValues(alpha: 0.6)),
+        labelStyle: TextStyle(color: primaryBrown.withOpacity(0.6)),
         prefixIcon: Icon(icon, color: primaryBrown),
         filled: true,
-        fillColor: cardBackground.withValues(alpha: 0.3),
+        fillColor: cardBackground.withOpacity(0.3),
         contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 18),
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(15),
@@ -310,7 +347,7 @@ class _WorkerProfileDetailsScreenState extends State<WorkerProfileDetailsScreen>
         ),
         enabledBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(15),
-          borderSide: BorderSide(color: primaryBrown.withValues(alpha: 0.5), width: 1.5),
+          borderSide: BorderSide(color: primaryBrown.withOpacity(0.5), width: 1.5),
         ),
         focusedBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(15),
