@@ -112,7 +112,7 @@ class _WorkerDashboardState extends State<WorkerDashboard> {
         if (isMobile) {
           return Scaffold(
             backgroundColor: kBackgroundColor,
-            body: _buildServicesPage(),
+            body: page,
             bottomNavigationBar: _buildBottomNavigationBar(),
           );
         }
