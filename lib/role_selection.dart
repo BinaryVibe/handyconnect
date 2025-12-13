@@ -13,7 +13,7 @@ class RoleSelectionScreen extends StatefulWidget {
 
 class _RoleSelectionScreenState extends State<RoleSelectionScreen> {
   // Variable to track selected role
-  String? selectedRole; // Values: 'customer', 'provider'
+  String? selectedRole; // Values: 'customer', 'worker'
   
   // Assuming UserSupabaseService is defined in your providers
   final UserSupabaseService _supabaseService = UserSupabaseService();
@@ -67,7 +67,7 @@ class _RoleSelectionScreenState extends State<RoleSelectionScreen> {
               borderRadius: BorderRadius.circular(20),
               boxShadow: [
                 BoxShadow(
-                  color: Colors.black.withOpacity(0.1),
+                  color: Colors.black.withValues(alpha: 0.1),
                   blurRadius: 20,
                   offset: const Offset(0, 10),
                 ),
@@ -199,11 +199,10 @@ class _RoleSelectionScreenState extends State<RoleSelectionScreen> {
       child: Container(
         padding: const EdgeInsets.all(20),
         decoration: BoxDecoration(
-          // Use .withOpacity() instead of .withValues() for compatibility with older Flutter versions if needed
-          color: cardBackground.withOpacity(0.5),
+          color: cardBackground.withValues(alpha: 0.5),
           borderRadius: BorderRadius.circular(20),
           border: Border.all(
-            color: isSelected ? primaryBrown : primaryBrown.withOpacity(0.5),
+            color: isSelected ? primaryBrown : primaryBrown.withValues(alpha: 0.5),
             width: isSelected ? 2.5 : 1.5,
           ),
         ),
@@ -240,7 +239,7 @@ class _RoleSelectionScreenState extends State<RoleSelectionScreen> {
                     subtitle,
                     style: TextStyle(
                       fontSize: 13,
-                      color: primaryBrown.withOpacity(0.8),
+                      color: primaryBrown.withValues(alpha: 0.8),
                       height: 1.4,
                     ),
                   ),
