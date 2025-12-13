@@ -97,6 +97,7 @@ class _LoginScreenState extends State<LoginScreen> {
     } catch (error) {
       // --- HANDLE UNEXPECTED ERRORS ---
       if (!mounted) return;
+      print(error.toString());
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
           content: Text('An unexpected error occurred. Please try again.'),
