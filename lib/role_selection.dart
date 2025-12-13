@@ -146,12 +146,14 @@ class _RoleSelectionScreenState extends State<RoleSelectionScreen> {
                 ? null // Disable button if nothing selected
                 : () {
                     if (selectedRole == 'customer') {
+                      _supabaseService.setUserRole(selectedRole!);
                       Navigator.push(
                         context,
                         MaterialPageRoute(
                             builder: (_) => const CustomerProfileScreen()),
                       );
-                    } else {
+                    } else if (selectedRole == 'worker') {
+                      _supabaseService.setUserRole(selectedRole!);
                       Navigator.push(
                         context,
                         MaterialPageRoute(
