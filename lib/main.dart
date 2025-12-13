@@ -32,7 +32,7 @@ class HandyConnect extends StatelessWidget {
       ),
       debugShowCheckedModeBanner: false,
       title: 'HandyConnect',
-      home: const LoginScreen(),
+      home: const SignUpScreen(),
     );
   }
 }
