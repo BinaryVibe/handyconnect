@@ -1,5 +1,6 @@
 import 'dart:typed_data'; // Required for Web/Mobile bytes
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 import 'package:handyconnect/src/providers/user_provider.dart';
 import 'package:handyconnect/src/providers/worker_provider.dart';
 import 'package:image_picker/image_picker.dart';
@@ -133,6 +134,7 @@ class _WorkerProfileDetailsScreenState extends State<WorkerProfileDetailsScreen>
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('Profile Saved Successfully!'), backgroundColor: Colors.green),
         );
+        context.go('/worker-dashboard');
       }
 
     } catch (e) {
