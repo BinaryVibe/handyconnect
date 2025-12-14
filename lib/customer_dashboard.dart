@@ -17,8 +17,6 @@ const Color tagsBgColor = Color(0xFFBFC882);
 const Color professionColor = Color(0xFFede0d4);
 const Color nameColor = Color(0xffe6ccb2);
 
-
-
 // Main Dashboard Screen
 class CustomerDashboard extends StatefulWidget {
   const CustomerDashboard({super.key});
@@ -45,7 +43,9 @@ class _CustomerDashboardState extends State<CustomerDashboard> {
   Future<void> _loadWorkers() async {
     setState(() => _isLoading = true);
     try {
+      print('before fetch');
       final workers = await _supabaseService.fetchWorkers();
+      print('after fetch');
       setState(() {
         _workers = workers;
         _filteredWorkers = workers;
@@ -139,6 +139,8 @@ class _CustomerDashboardState extends State<CustomerDashboard> {
   }
 
   Column _buildMainBody() {
+    // print("filteredWorkerList");
+    // print(_filteredWorkers);
     return Column(
       children: [
         Container(
