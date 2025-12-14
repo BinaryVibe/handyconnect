@@ -56,6 +56,10 @@ class _SignUpScreenState extends State<SignUpScreen> {
                 ),
                 child: Column(
                   children: [
+                    _buildLogo(),
+
+                    const SizedBox(height: 50),
+
                     Row(
                       children: [
                         // NOTE: Without Expanded widgets the code will throw an exception.
@@ -283,5 +287,23 @@ class _SignUpScreenState extends State<SignUpScreen> {
     ScaffoldMessenger.of(
       context,
     ).showSnackBar(SnackBar(content: Text(msg), backgroundColor: Colors.red));
+  }
+
+  Widget _buildLogo() {
+    return Container(
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: kPrimaryColor,
+        shape: BoxShape.circle,
+        boxShadow: [
+          BoxShadow(
+            color: kPrimaryColor.withValues(alpha: 0.3),
+            blurRadius: 20,
+            spreadRadius: 5,
+          ),
+        ],
+      ),
+      child: const Icon(Icons.handyman, size: 60, color: Colors.white),
+    );
   }
 }
