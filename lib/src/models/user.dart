@@ -6,7 +6,6 @@ class User {
   final String phoneNumber;
   final String? avatarUrl;
 
-
   User({
     required this.id,
     required this.firstName,
