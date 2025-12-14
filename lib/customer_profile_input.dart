@@ -1,5 +1,6 @@
 import 'dart:typed_data'; // Bytes handle karne ke liye
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 import 'package:handyconnect/login.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
@@ -10,7 +11,7 @@ final Color cardBackground = const Color(0xFFD7CCC8);
 final Color scaffoldBackground = const Color(0xFFFAFAFA);
 
 class CustomerProfileScreen extends StatefulWidget {
-  const CustomerProfileScreen({Key? key}) : super(key: key);
+  const CustomerProfileScreen({super.key});
 
   @override
   State<CustomerProfileScreen> createState() => _CustomerProfileScreenState();
@@ -93,7 +94,6 @@ class _CustomerProfileScreenState extends State<CustomerProfileScreen> {
           .from('profiles')
           .update({
             'avatar_url': imageUrl,
-            'updated_at': DateTime.now().toIso8601String(),
           })
           .eq('id', userId);
 
@@ -105,6 +105,7 @@ class _CustomerProfileScreenState extends State<CustomerProfileScreen> {
           ),
         );
         // Navigate to next screen logic here...
+        context.go('/customer-dashboard');
       }
 
     } catch (e) {
