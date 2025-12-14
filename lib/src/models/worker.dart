@@ -26,11 +26,11 @@ class Worker extends User {
   factory Worker.fromJson(Map<String, dynamic> json) {
     return Worker(
       id: json['id'] as String,
-      firstName: json['first_name'] as String,
-      lastName: json['last_name'] as String,
-      email: json['email'] as String,
-      phoneNumber: json['phone_number'] as String,
-      avatarUrl: json['avatar_url'] as String?,
+      firstName: json['profiles']['first_name'] as String,
+      lastName: json['profiles']['last_name'] as String,
+      email: json['profiles']['email'] as String,
+      phoneNumber: json['profiles']['phone_number'] as String,
+      avatarUrl: json['profiles']['avatar_url'] as String?,
       profession: json['profession'] as String,
       skills: List<String>.from(json['skills'] ?? []),
       availability: json['availability'] as bool,
