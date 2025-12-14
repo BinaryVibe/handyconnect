@@ -8,7 +8,10 @@ class WorkerSupabaseService {
   // Fetch all workers
   Future<List<Worker>> fetchWorkers() async {
     try {
-      final response = await _supabase.from('workers').select();
+      final response = await _supabase
+          .from('workers')
+          .select('*, profiles(id, *)');
+      // print(response as List);
       return (response as List).map((json) => Worker.fromJson(json)).toList();
     } catch (e) {
       throw Exception('Failed to fetch workers: $e');
