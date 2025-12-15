@@ -2,7 +2,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 
 class UserHandler {
   final supabase = Supabase.instance.client;
-  late final userId = supabase.auth.currentUser?.id;
+  String? get userId => supabase.auth.currentUser?.id;
 
   Future<void> setUserRole(String role) async {
     try {
