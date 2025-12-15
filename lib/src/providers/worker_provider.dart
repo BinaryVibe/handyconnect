@@ -23,7 +23,7 @@ class WorkerSupabaseService {
     try {
       final response = await _supabase
           .from('workers')
-          .select()
+          .select('*, profiles(id, *)')
           .or('profession.ilike.%$query%,skills.cs.{$query}');
       return (response as List).map((json) => Worker.fromJson(json)).toList();
     } catch (e) {
