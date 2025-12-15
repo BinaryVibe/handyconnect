@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
+import 'package:supabase_flutter/supabase_flutter.dart'; 
 import '../models/worker.dart';
 
 // --- Theme Constants ---
@@ -18,16 +19,15 @@ class BookServiceScreen extends StatefulWidget {
 }
 
 class _BookServiceScreenState extends State<BookServiceScreen> {
-  // Controllers
+  // --- Controllers ---
   final _titleController = TextEditingController();
   final _descriptionController = TextEditingController();
   final _priceController = TextEditingController();
   final _locationController = TextEditingController();
 
-  // Date and Time State
+  // --- State Variables ---
   DateTime? _selectedDate;
   TimeOfDay? _selectedTime;
-
   bool _isSubmitting = false;
 
   @override
@@ -39,6 +39,7 @@ class _BookServiceScreenState extends State<BookServiceScreen> {
     super.dispose();
   }
 
+  // --- Date & Time Pickers ---
   Future<void> _pickDate() async {
     final DateTime? picked = await showDatePicker(
       context: context,
@@ -89,7 +90,9 @@ class _BookServiceScreenState extends State<BookServiceScreen> {
     }
   }
 
+  // --- SUBMIT LOGIC (Push to Supabase) ---
   Future<void> _submitBooking() async {
+    // 1. Validate Inputs
     if (_titleController.text.isEmpty ||
         _locationController.text.isEmpty ||
         _priceController.text.isEmpty ||
@@ -103,34 +106,77 @@ class _BookServiceScreenState extends State<BookServiceScreen> {
 
     setState(() => _isSubmitting = true);
 
-    // Simulate Network Request
-    await Future.delayed(const Duration(seconds: 1));
+    try {
+      // 2. Get Current User ID (Customer)
+      final userId = Supabase.instance.client.auth.currentUser!.id;
 
-    // Combine Date and Time
-    final DateTime finalDateTime = DateTime(
-      _selectedDate!.year,
-      _selectedDate!.month,
-      _selectedDate!.day,
-      _selectedTime!.hour,
-      _selectedTime!.minute,
-    );
+      // 3. Combine Date and Time
+      final DateTime finalDateTime = DateTime(
+        _selectedDate!.year,
+        _selectedDate!.month,
+        _selectedDate!.day,
+        _selectedTime!.hour,
+        _selectedTime!.minute,
+      );
 
-    // TODO: Add Supabase Logic Here
-    // Create 'services' row using widget.worker.id and current customer ID
-    // Create 'service_details' row with price and finalDateTime
+      // 4. Insert into 'services' table AND return the new row
+      final serviceResponse = await Supabase.instance.client
+          .from('services')
+          .insert({
+            'worker_id': widget.worker.id,
+            'customer_id': userId,
+            'service_title': _titleController.text.trim(),
+            'description': _descriptionController.text.trim(),
+            'location': _locationController.text.trim(),
+            'accepted_status': false, // Default: Pending
+            'created_at': DateTime.now().toIso8601String(),
+          })
+          .select() // Request the inserted row back so we can get its ID
+          .single();
 
-    if (mounted) {
-      setState(() => _isSubmitting = false);
+      final newServiceId = serviceResponse['id'];
+
+      // 5. Insert into 'service_details' table using the new ID
+      await Supabase.instance.client
+          .from('service_details')
+          .insert({
+            'service_id': newServiceId,
+            'price': double.parse(_priceController.text.trim()),
+            'booking_date': finalDateTime.toIso8601String(),
+            'paid_status': false,
+          });
+
+      if (!mounted) return;
+
+      // 6. Success!
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-          content: Text('Booking Request Sent!'),
+          content: Text('Booking Request Sent Successfully!'),
           backgroundColor: Colors.green,
         ),
       );
-      context.pop(); // Go back to worker details
+      
+      // Go back to the previous screen
+      context.pop();
+
+    } catch (error) {
+      // 7. Error Handling
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error booking service: $error'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    } finally {
+      if (mounted) {
+        setState(() => _isSubmitting = false);
+      }
     }
   }
 
+  // --- UI Build ---
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -148,43 +194,51 @@ class _BookServiceScreenState extends State<BookServiceScreen> {
         ),
         centerTitle: true,
       ),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(20.0),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            _buildWorkerProfileCard(),
-            const SizedBox(height: 24),
-            const Text(
-              "Service Details",
-              style: TextStyle(
-                fontSize: 18,
-                fontWeight: FontWeight.bold,
-                color: kPrimaryColor,
-              ),
+      // --- UPDATE: Centered Layout for Desktop ---
+      body: Center(
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: 600), // Limit width on desktop
+          child: SingleChildScrollView(
+            padding: const EdgeInsets.all(20.0),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                _buildWorkerProfileCard(),
+                const SizedBox(height: 24),
+                const Text(
+                  "Service Details",
+                  style: TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
+                    color: kPrimaryColor,
+                  ),
+                ),
+                const SizedBox(height: 16),
+                _buildTextField("Service Title", _titleController),
+                const SizedBox(height: 12),
+                _buildTextField("Description", _descriptionController, maxLines: 3),
+                const SizedBox(height: 12),
+                _buildTextField(
+                  "Your Offer (Price)",
+                  _priceController,
+                  inputType: TextInputType.number,
+                  prefix: "\$ ", 
+                ),
+                const SizedBox(height: 12),
+                _buildDateTimeRow(),
+                const SizedBox(height: 12),
+                _buildTextField("Location", _locationController, icon: Icons.location_on_outlined),
+                const SizedBox(height: 30),
+                _buildSubmitButton(),
+              ],
             ),
-            const SizedBox(height: 16),
-            _buildTextField("Service Title", _titleController),
-            const SizedBox(height: 12),
-            _buildTextField("Description", _descriptionController, maxLines: 3),
-            const SizedBox(height: 12),
-            _buildTextField(
-              "Your Offer (Price)",
-              _priceController,
-              inputType: TextInputType.number,
-              prefix: "\$ ",
-            ),
-            const SizedBox(height: 12),
-            _buildDateTimeRow(),
-            const SizedBox(height: 12),
-            _buildTextField("Location", _locationController, icon: Icons.location_on_outlined),
-            const SizedBox(height: 30),
-            _buildSubmitButton(),
-          ],
+          ),
         ),
       ),
     );
   }
+
+  // --- Helper Widgets ---
 
   Widget _buildWorkerProfileCard() {
     return Container(
