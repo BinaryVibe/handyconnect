@@ -1,184 +1,623 @@
 import 'package:flutter/material.dart';
-import 'package:intl/intl.dart';
-import 'worker_edit_page.dart';
-import 'worker_model.dart';
+import 'src/models/worker.dart';
 
-const Color kPrimaryColor = Color(0xFF4A2E1E);
+// Color Constants
+const Color kPrimaryColor = Color.fromARGB(255, 74, 46, 30);
 const Color kFieldColor = Color(0xFFE9DFD8);
 const Color kBackgroundColor = Color(0xFFF7F2EF);
+const Color listTileColor = Color(0xFFad8042);
+const Color secondaryTextColor = Color(0xFFBFAB67);
+const Color tagsBgColor = Color(0xFFBFC882);
+const Color professionColor = Color(0xFFede0d4);
+const Color nameColor = Color(0xFFe6ccb2);
 
-class WorkerDetailsPage extends StatefulWidget {
+class WorkerDetailScreen extends StatelessWidget {
   final Worker worker;
-  const WorkerDetailsPage({super.key, required this.worker});
 
-  @override
-  State<WorkerDetailsPage> createState() => _WorkerDetailsPageState();
-}
-
-class _WorkerDetailsPageState extends State<WorkerDetailsPage> {
+  const WorkerDetailScreen({super.key, required this.worker});
 
   @override
   Widget build(BuildContext context) {
-    final worker = widget.worker;
-
     return Scaffold(
       backgroundColor: kBackgroundColor,
-      appBar: AppBar(
-        backgroundColor: kBackgroundColor,
-        elevation: 0,
-        centerTitle: true,
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back, color: kPrimaryColor),
-          onPressed: () => Navigator.pop(context),
-        ),
-        title: const Text(
-          "Worker Details",
-          style: TextStyle(
-            color: kPrimaryColor,
-            fontWeight: FontWeight.bold,
+      body: LayoutBuilder(
+        builder: (context, constraints) {
+          final isMobile = constraints.maxWidth < 900;
+
+          return CustomScrollView(
+            slivers: [
+              _buildSliverAppBar(context, isMobile),
+              SliverToBoxAdapter(
+                child: isMobile
+                    ? _buildMobileLayout(context)
+                    : _buildDesktopLayout(context),
+              ),
+            ],
+          );
+        },
+      ),
+    );
+  }
+
+  Widget _buildSliverAppBar(BuildContext context, bool isMobile) {
+    return SliverAppBar(
+      expandedHeight: isMobile ? 300 : 320,
+      floating: false,
+      pinned: true,
+      backgroundColor: kPrimaryColor,
+      leading: IconButton(
+        icon: const Icon(Icons.arrow_back, color: Colors.white),
+        onPressed: () => Navigator.pop(context),
+      ),
+      flexibleSpace: FlexibleSpaceBar(
+        background: Container(
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              begin: Alignment.topCenter,
+              end: Alignment.bottomCenter,
+              colors: [kPrimaryColor, listTileColor],
+            ),
+          ),
+          child: SafeArea(
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                const SizedBox(height: 60),
+                Hero(
+                  tag: 'worker-avatar-${worker.id}',
+                  child: Container(
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      border: Border.all(color: Colors.white, width: 4),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withOpacity(0.2),
+                          blurRadius: 15,
+                          offset: const Offset(0, 5),
+                        ),
+                      ],
+                    ),
+                    child: CircleAvatar(
+                      radius: isMobile ? 60 : 70,
+                      backgroundImage: worker.avatarUrl != null
+                          ? NetworkImage(worker.avatarUrl!)
+                          : null,
+                      backgroundColor: Colors.white,
+                      child: worker.avatarUrl == null
+                          ? Icon(
+                              Icons.person,
+                              size: isMobile ? 60 : 70,
+                              color: kPrimaryColor,
+                            )
+                          : null,
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 16),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Text(
+                      '${worker.firstName} ${worker.lastName}',
+                      style: const TextStyle(
+                        fontSize: 28,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.white,
+                      ),
+                    ),
+                    if (worker.verifiedStatus) ...[
+                      const SizedBox(width: 8),
+                      const Icon(Icons.verified, color: Colors.blue, size: 24),
+                    ],
+                  ],
+                ),
+                const SizedBox(height: 8),
+                Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 16,
+                    vertical: 6,
+                  ),
+                  decoration: BoxDecoration(
+                    color: professionColor,
+                    borderRadius: BorderRadius.circular(20),
+                  ),
+                  child: Text(
+                    worker.profession,
+                    style: TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.w600,
+                      color: kPrimaryColor,
+                    ),
+                  ),
+                ),
+              ],
+            ),
           ),
         ),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.edit, color: kPrimaryColor),
-            onPressed: () async {
-              final updatedWorker = await Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (_) => WorkerEditPage(worker: worker),
-                ),
-              );
+      ),
+    );
+  }
 
-              if (updatedWorker != null) {
-                setState(() {
-                  widget.worker.name = updatedWorker.name;
-                  widget.worker.category = updatedWorker.category;
-                  widget.worker.description = updatedWorker.description;
-                  widget.worker.experience = updatedWorker.experience;
-                  widget.worker.pricing = updatedWorker.pricing;
-                  widget.worker.tools = updatedWorker.tools;
-                  widget.worker.availableDates = updatedWorker.availableDates;
-                });
-              }
-            },
-          )
+  Widget _buildMobileLayout(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.all(16.0),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          _buildAvailabilityCard(),
+          const SizedBox(height: 16),
+          _buildStatsCard(),
+          const SizedBox(height: 16),
+          _buildContactCard(),
+          const SizedBox(height: 16),
+          _buildSkillsSection(),
+          const SizedBox(height: 16),
+          _buildAboutSection(),
+          const SizedBox(height: 24),
+          _buildHireButton(context),
+          const SizedBox(height: 24),
         ],
       ),
+    );
+  }
 
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.symmetric(horizontal: 20),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
+  Widget _buildDesktopLayout(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.all(40.0),
+      child: Column(
+        children: [
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Expanded(
+                flex: 2,
+                child: Column(
+                  children: [
+                    _buildAvailabilityCard(),
+                    const SizedBox(height: 16),
+                    _buildStatsCard(),
+                    const SizedBox(height: 16),
+                    _buildContactCard(),
+                  ],
+                ),
+              ),
+              const SizedBox(width: 24),
+              Expanded(
+                flex: 3,
+                child: Column(
+                  children: [
+                    _buildSkillsSection(),
+                    const SizedBox(height: 16),
+                    _buildAboutSection(),
+                    const SizedBox(height: 24),
+                    _buildHireButton(context),
+                  ],
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 40),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildAvailabilityCard() {
+    return Card(
+      elevation: 2,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+      color: Colors.white,
+      child: Padding(
+        padding: const EdgeInsets.all(20),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.center,
           children: [
-
-            // Worker Image
             Container(
-              height: 220,
+              width: 12,
+              height: 12,
               decoration: BoxDecoration(
-                color: kFieldColor,
-                borderRadius: BorderRadius.circular(25),
-              ),
-              child: ClipRRect(
-                borderRadius: BorderRadius.circular(25),
-                child: Image.asset(worker.image, fit: BoxFit.cover),
+                color: worker.availability ? Colors.green : Colors.red,
+                shape: BoxShape.circle,
               ),
             ),
-
-            const SizedBox(height: 20),
-
-            // Basic Info Card
-            Container(
-              padding: const EdgeInsets.all(18),
-              decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(18),
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.grey.withValues(alpha: 0.2),
-                    blurRadius: 8,
-                    offset: const Offset(0, 4),
-                  ),
-                ],
-              ),
-              child: Row(
-                children: [
-                  Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        worker.name,
-                        style: const TextStyle(
-                          fontSize: 20,
-                          fontWeight: FontWeight.bold,
-                          color: kPrimaryColor,
-                        ),
-                      ),
-                      const SizedBox(height: 6),
-                      Text(worker.category, style: const TextStyle(fontSize: 16, color: Colors.grey)),
-                    ],
-                  ),
-                  const Spacer(),
-                  Column(
-                    children: [
-                      Text(worker.rating.toString(), style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: kPrimaryColor)),
-                      const Icon(Icons.star, color: Colors.amber),
-                    ],
-                  ),
-                ],
+            const SizedBox(width: 12),
+            Text(
+              worker.availability ? 'Available Now' : 'Currently Busy',
+              style: TextStyle(
+                fontSize: 18,
+                fontWeight: FontWeight.bold,
+                color: worker.availability
+                    ? Colors.green[700]
+                    : Colors.red[700],
               ),
             ),
-
-            const SizedBox(height: 25),
-
-            Text(worker.description, style: const TextStyle(fontSize: 16, color: Colors.black87)),
-
-            const SizedBox(height: 25),
-
-            const Text("Available Dates",
-                style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: kPrimaryColor)),
-
-            const SizedBox(height: 12),
-
-            _buildCalendar(worker.availableDates),
-
-            const SizedBox(height: 25),
-
-            const SizedBox(height: 30),
           ],
         ),
       ),
     );
   }
 
-  Widget _buildCalendar(List<DateTime> dates) {
-    if (dates.isEmpty) {
-      return const Text("No available dates.", style: TextStyle(color: Colors.grey));
-    }
-
-    return SizedBox(
-      height: 90,
-      child: ListView.builder(
-        scrollDirection: Axis.horizontal,
-        itemCount: dates.length,
-        itemBuilder: (_, index) {
-          final d = dates[index];
-          return Container(
-            margin: const EdgeInsets.only(right: 12),
-            padding: const EdgeInsets.all(12),
-            decoration: BoxDecoration(
-              color: kPrimaryColor,
-              borderRadius: BorderRadius.circular(16),
+  Widget _buildStatsCard() {
+    return Card(
+      elevation: 2,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+      color: listTileColor,
+      child: Padding(
+        padding: const EdgeInsets.all(20),
+        child: Column(
+          children: [
+            Text(
+              'Statistics',
+              style: TextStyle(
+                fontSize: 18,
+                fontWeight: FontWeight.bold,
+                color: nameColor,
+              ),
             ),
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
+            const SizedBox(height: 20),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceAround,
               children: [
-                Text(DateFormat('MMM').format(d), style: const TextStyle(color: Colors.white)),
-                Text(DateFormat('dd').format(d),
-                    style: const TextStyle(color: Colors.white, fontSize: 20, fontWeight: FontWeight.bold)),
+                _buildStatItem(
+                  Icons.star,
+                  worker.avgRating.toStringAsFixed(1),
+                  'Rating',
+                  Colors.amber,
+                ),
+                Container(height: 50, width: 1, color: professionColor),
+                _buildStatItem(
+                  Icons.attach_money,
+                  'Rs. ${(worker.earnings / 1000).toStringAsFixed(0)}k',
+                  'Earnings',
+                  Colors.green,
+                ),
+                Container(height: 50, width: 1, color: professionColor),
+                _buildStatItem(
+                  Icons.verified,
+                  worker.verifiedStatus ? 'Yes' : 'No',
+                  'Verified',
+                  Colors.blue,
+                ),
               ],
             ),
-          );
-        },
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildStatItem(
+    IconData icon,
+    String value,
+    String label,
+    Color color,
+  ) {
+    return Column(
+      children: [
+        Icon(icon, color: color, size: 28),
+        const SizedBox(height: 8),
+        Text(
+          value,
+          style: const TextStyle(
+            fontSize: 20,
+            fontWeight: FontWeight.bold,
+            color: nameColor,
+          ),
+        ),
+        Text(label, style: TextStyle(fontSize: 12, color: professionColor)),
+      ],
+    );
+  }
+
+  Widget _buildContactCard() {
+    return Card(
+      elevation: 2,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+      color: Colors.white,
+      child: Padding(
+        padding: const EdgeInsets.all(20),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              'Contact Information',
+              style: TextStyle(
+                fontSize: 18,
+                fontWeight: FontWeight.bold,
+                color: kPrimaryColor,
+              ),
+            ),
+            const SizedBox(height: 16),
+            _buildContactItem(Icons.email, 'Email', worker.email),
+            const SizedBox(height: 12),
+            _buildContactItem(Icons.phone, 'Phone', worker.phoneNumber),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildContactItem(IconData icon, String label, String value) {
+    return Row(
+      children: [
+        Container(
+          padding: const EdgeInsets.all(8),
+          decoration: BoxDecoration(
+            color: kFieldColor,
+            borderRadius: BorderRadius.circular(8),
+          ),
+          child: Icon(icon, color: kPrimaryColor, size: 20),
+        ),
+        const SizedBox(width: 12),
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                label,
+                style: TextStyle(fontSize: 12, color: secondaryTextColor),
+              ),
+              const SizedBox(height: 2),
+              SelectableText(
+                value,
+                style: TextStyle(
+                  fontSize: 14,
+                  fontWeight: FontWeight.w500,
+                  color: kPrimaryColor,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildSkillsSection() {
+    return Card(
+      elevation: 2,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+      color: Colors.white,
+      child: Padding(
+        padding: const EdgeInsets.all(20),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Icon(Icons.build, color: kPrimaryColor),
+                const SizedBox(width: 8),
+                Text(
+                  'Skills & Expertise',
+                  style: TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
+                    color: kPrimaryColor,
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 16),
+            Wrap(
+              spacing: 10,
+              runSpacing: 10,
+              children: worker.skills
+                  .map(
+                    (skill) => Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 16,
+                        vertical: 10,
+                      ),
+                      decoration: BoxDecoration(
+                        color: tagsBgColor,
+                        borderRadius: BorderRadius.circular(20),
+                        border: Border.all(
+                          color: const Color(0xFF3E4C22),
+                          width: 1,
+                        ),
+                      ),
+                      child: Text(
+                        skill,
+                        style: const TextStyle(
+                          fontSize: 14,
+                          fontWeight: FontWeight.w500,
+                          color: Color(0xFF3E4C22),
+                        ),
+                      ),
+                    ),
+                  )
+                  .toList(),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildAboutSection() {
+    return Card(
+      elevation: 2,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+      color: Colors.white,
+      child: Padding(
+        padding: const EdgeInsets.all(20),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Icon(Icons.info_outline, color: kPrimaryColor),
+                const SizedBox(width: 8),
+                Text(
+                  'About',
+                  style: TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
+                    color: kPrimaryColor,
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 16),
+            Text(
+              'Professional ${worker.profession.toLowerCase()} with expertise in ${worker.skills.take(3).join(", ")}. '
+              '${worker.verifiedStatus ? "Verified and background-checked for your safety. " : ""}'
+              'With an average rating of ${worker.avgRating.toStringAsFixed(1)} stars, '
+              '${worker.firstName} has successfully completed numerous projects and earned the trust of many satisfied customers.',
+              style: TextStyle(
+                fontSize: 14,
+                height: 1.6,
+                color: kPrimaryColor.withOpacity(0.8),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildHireButton(BuildContext context) {
+    return SizedBox(
+      width: double.infinity,
+      height: 56,
+      child: ElevatedButton(
+        onPressed: worker.availability
+            ? () {
+                _showHireDialog(context);
+              }
+            : null,
+        style: ElevatedButton.styleFrom(
+          backgroundColor: kPrimaryColor,
+          foregroundColor: Colors.white,
+          disabledBackgroundColor: Colors.grey[300],
+          disabledForegroundColor: Colors.grey[600],
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12),
+          ),
+          elevation: worker.availability ? 5 : 0,
+        ),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(
+              worker.availability ? Icons.check_circle : Icons.schedule,
+              size: 24,
+            ),
+            const SizedBox(width: 12),
+            Text(
+              worker.availability
+                  ? 'Hire ${worker.firstName}'
+                  : 'Currently Unavailable',
+              style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  void _showHireDialog(BuildContext context) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        backgroundColor: kBackgroundColor,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        title: Row(
+          children: [
+            Icon(Icons.work, color: kPrimaryColor),
+            const SizedBox(width: 8),
+            Text('Hire Worker', style: TextStyle(color: kPrimaryColor)),
+          ],
+        ),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              'You are about to send a service request to:',
+              style: TextStyle(color: kPrimaryColor.withOpacity(0.8)),
+            ),
+            const SizedBox(height: 16),
+            Container(
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: listTileColor.withOpacity(0.3),
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Row(
+                children: [
+                  CircleAvatar(
+                    radius: 25,
+                    backgroundImage: worker.avatarUrl != null
+                        ? NetworkImage(worker.avatarUrl!)
+                        : null,
+                    backgroundColor: kFieldColor,
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          '${worker.firstName} ${worker.lastName}',
+                          style: TextStyle(
+                            fontWeight: FontWeight.bold,
+                            fontSize: 16,
+                            color: kPrimaryColor,
+                          ),
+                        ),
+                        Text(
+                          worker.profession,
+                          style: TextStyle(
+                            color: secondaryTextColor,
+                            fontSize: 14,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 16),
+            Text(
+              'The worker will receive your request and contact you shortly.',
+              style: TextStyle(
+                fontSize: 13,
+                color: kPrimaryColor.withOpacity(0.7),
+              ),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: Text('Cancel', style: TextStyle(color: secondaryTextColor)),
+          ),
+          ElevatedButton(
+            onPressed: () {
+              Navigator.pop(context);
+              // TODO: Implement hire logic - create service request
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(
+                  content: Text('Service request sent to ${worker.firstName}!'),
+                  backgroundColor: Colors.green,
+                  behavior: SnackBarBehavior.floating,
+                ),
+              );
+              // Navigate back to dashboard
+              Navigator.pop(context);
+            },
+            style: ElevatedButton.styleFrom(
+              backgroundColor: kPrimaryColor,
+              foregroundColor: Colors.white,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(8),
+              ),
+            ),
+            child: const Text('Confirm'),
+          ),
+        ],
       ),
     );
   }
