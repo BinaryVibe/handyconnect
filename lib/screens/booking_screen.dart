@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:uuid/uuid.dart';
-import 'src/models/service.dart'; // import your Service class
+import '../models/service.dart'; // import your Service class
 
 // void main() async {
 //   WidgetsFlutterBinding.ensureInitialized();

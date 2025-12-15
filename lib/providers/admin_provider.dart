@@ -1,5 +1,5 @@
 import 'package:flutter/foundation.dart';
-import '../models/admin.dart';
+import '../src/models/admin.dart';
 
 class AdminProvider extends ChangeNotifier {
   final List<Admin> _admins = [];

@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
-import 'utils/build_logo.dart';
+import '../utils/build_logo.dart';
 
 // Color Constants (matching your theme)
 const Color kPrimaryColor = Color.fromARGB(255, 74, 46, 30);

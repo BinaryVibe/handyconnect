@@ -1,6 +1,6 @@
 // Combined Service with Customer Info (for display purposes)
-import '../src/models/service.dart';
-import '../src/models/service_details.dart';
+import '../models/service.dart';
+import '../models/service_details.dart';
 
 class ServiceWithCustomer {
   final Service service;

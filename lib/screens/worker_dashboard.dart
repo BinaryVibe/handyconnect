@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 // import 'src/models/service.dart';
 // import 'src/models/service_details.dart';
-import 'src/providers/customer_provider.dart';
-import 'utils/customer_with_service.dart';
+import '../providers/customer_provider.dart';
+import '../utils/customer_with_service.dart';
 
 // Color Constants
 const Color kPrimaryColor = Color.fromARGB(255, 74, 46, 30);

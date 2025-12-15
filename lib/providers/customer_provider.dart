@@ -1,4 +1,4 @@
-import '../../utils/customer_with_service.dart';
+import '../utils/customer_with_service.dart';
 import '../models/service.dart';
 import '../models/service_details.dart';
 

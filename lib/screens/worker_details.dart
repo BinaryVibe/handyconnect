@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'src/models/worker.dart';
+import '../models/worker.dart';
 
 // Color Constants
 const Color kPrimaryColor = Color.fromARGB(255, 74, 46, 30);

@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'worker_profile_input.dart';
 import 'customer_profile_input.dart';
-import 'src/providers/user_provider.dart';
+import '../providers/user_provider.dart';
 
 class RoleSelectionScreen extends StatefulWidget {
   const RoleSelectionScreen({super.key});

@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 // import 'package:supabase_flutter/supabase_flutter.dart';
-import 'src/models/worker.dart';
-import 'src/providers/worker_provider.dart';
+import '../models/worker.dart';
+import '../providers/worker_provider.dart';
 
 const Color kPrimaryColor = Color.fromARGB(
   255,

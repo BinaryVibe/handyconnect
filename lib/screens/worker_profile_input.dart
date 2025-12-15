@@ -1,8 +1,8 @@
 import 'dart:typed_data'; // Required for Web/Mobile bytes
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
-import 'package:handyconnect/src/providers/user_provider.dart';
-import 'package:handyconnect/src/providers/worker_provider.dart';
+import 'package:handyconnect/providers/user_provider.dart';
+import 'package:handyconnect/providers/worker_provider.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:supabase_flutter/supabase_flutter.dart'; // Required for Storage
 

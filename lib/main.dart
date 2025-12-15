@@ -1,16 +1,16 @@
 import 'package:flutter/material.dart';
-import 'package:handyconnect/role_selection.dart';
-import 'package:handyconnect/worker_details.dart';
+import 'package:handyconnect/screens/role_selection.dart';
+import 'package:handyconnect/screens/worker_details.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:go_router/go_router.dart';
 
 // For testing
-import 'signup.dart';
-import 'src/models/worker.dart';
-import 'worker_dashboard.dart';
-import 'customer_dashboard.dart';
-import 'login.dart';
-import 'homepage.dart';
+import 'screens/signup.dart';
+import 'models/worker.dart';
+import 'screens/worker_dashboard.dart';
+import 'screens/customer_dashboard.dart';
+import 'screens/login.dart';
+import 'screens/homepage.dart';
 
 const Color kPrimaryColor = Color.fromARGB(255, 74, 46, 30);
 
