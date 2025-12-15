@@ -2,7 +2,7 @@ import 'dart:typed_data'; // Bytes handle karne ke liye
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:handyconnect/providers/customer_provider.dart';
-import 'package:handyconnect/providers/service_provider.dart';
+import 'package:handyconnect/providers/user_provider.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
@@ -20,10 +20,11 @@ class CustomerProfileScreen extends StatefulWidget {
 
 class _CustomerProfileScreenState extends State<CustomerProfileScreen> {
   // Change 1: Hum 'File' nahi, balki 'Bytes' store karenge (Works on Web & Mobile)
-  Uint8List? _imageBytes; 
+  Uint8List? _imageBytes;
   XFile? _pickedFile; // Metadata (name/ext) ke liye
-  
+
   final CustomerHandler _customerHandler = CustomerHandler();
+  final UserHandler _userHandler = UserHandler();
 
   final ImagePicker _picker = ImagePicker();
   bool _isLoading = false;
@@ -36,16 +37,16 @@ class _CustomerProfileScreenState extends State<CustomerProfileScreen> {
       if (pickedFile != null) {
         // Change 2: Read file as bytes immediately
         final Uint8List bytes = await pickedFile.readAsBytes();
-        
+
         setState(() {
           _pickedFile = pickedFile;
           _imageBytes = bytes;
         });
       }
     } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Error picking image: $e')),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('Error picking image: $e')));
     }
   }
 
@@ -67,56 +68,40 @@ class _CustomerProfileScreenState extends State<CustomerProfileScreen> {
     try {
       final user = Supabase.instance.client.auth.currentUser;
       if (user == null) throw "User not logged in!";
-      
+
       final String userId = user.id;
-      
+
       // Get file extension from the picked file name
-      final String fileExt = _pickedFile!.name.split('.').last; 
+      final String fileExt = _pickedFile!.name.split('.').last;
       final String filePath = '$userId/profile_pic.$fileExt';
 
-      // Change 3: Use 'uploadBinary' (Universal method)
-      // Ye method bytes accept karta hai jo mobile aur web dono pe hote hain
-      await Supabase.instance.client.storage
-          .from('avatars')
-          .uploadBinary(
-            filePath,
-            _imageBytes!,
-            fileOptions: FileOptions(
-              upsert: true, 
-              contentType: 'image/$fileExt', // Browser ko batana zaroori hai ke ye image hai
-            ),
-          );
+      await _userHandler.uploadAvatarAndSaveUrl(
+        imageBytes: _imageBytes!,
+        filePath: filePath,
+        fileExt: fileExt,
+      );
 
-      // Get Public URL
-      final String imageUrl = Supabase.instance.client.storage
-          .from('avatars')
-          .getPublicUrl(filePath);
-
-      // Update Database
-      await Supabase.instance.client
-          .from('profiles')
-          .update({
-            'avatar_url': imageUrl,
-          })
-          .eq('id', userId);
-
+      // NOTE: Keep the Map empty. date_joined will be set
+      // to the current time by default in the database
       await _customerHandler.insertCustomer({});
 
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
-            content: Text('Profile Setup Complete!'), 
-            backgroundColor: Colors.green
+            content: Text('Profile Setup Complete!'),
+            backgroundColor: Colors.green,
           ),
         );
         // Navigate to next screen logic here...
         context.go('/c-dashboard');
       }
-
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Error uploading: $e'), backgroundColor: Colors.red),
+          SnackBar(
+            content: Text('Error uploading: $e'),
+            backgroundColor: Colors.red,
+          ),
         );
       }
     } finally {
@@ -262,22 +247,25 @@ class _CustomerProfileScreenState extends State<CustomerProfileScreen> {
                         ),
                         elevation: 5,
                       ),
-                      child: _isLoading 
-                        ? const SizedBox(
-                            height: 24, 
-                            width: 24, 
-                            child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2)
-                          )
-                        : const Text(
-                            "Continue",
-                            style: TextStyle(
-                              fontSize: 18, 
-                              fontWeight: FontWeight.w600
+                      child: _isLoading
+                          ? const SizedBox(
+                              height: 24,
+                              width: 24,
+                              child: CircularProgressIndicator(
+                                color: Colors.white,
+                                strokeWidth: 2,
+                              ),
+                            )
+                          : const Text(
+                              "Continue",
+                              style: TextStyle(
+                                fontSize: 18,
+                                fontWeight: FontWeight.w600,
+                              ),
                             ),
-                          ),
                     ),
                   ),
-                  
+
                   if (!isWideScreen) const SizedBox(height: 20),
                 ],
               ),

@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:handyconnect/components/customer_service_card.dart';
 import 'package:handyconnect/utils/service_with_worker.dart';
-import '../providers/customer_provider.dart';
+import '../providers/service_provider.dart';
 
 // Color Constants
 const Color kPrimaryColor = Color.fromARGB(255, 74, 46, 30);
@@ -22,7 +22,7 @@ class CustomerBookingsPage extends StatefulWidget {
 }
 
 class _CustomerBookingsPageState extends State<CustomerBookingsPage> {
-  final CustomerServiceService _serviceService = CustomerServiceService();
+  final CustomerServiceHandler _serviceService = CustomerServiceHandler();
   final String _customerId = 'c123'; // TODO: Get from auth
 
   List<ServiceWithWorker> _services = [];
