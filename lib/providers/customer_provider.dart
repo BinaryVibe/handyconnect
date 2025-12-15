@@ -1,6 +1,148 @@
+import 'package:supabase_flutter/supabase_flutter.dart';
+
 import '../utils/customer_with_service.dart';
 import '../models/service.dart';
 import '../models/service_details.dart';
+import '../utils/service_with_worker.dart';
+
+class CustomerServiceService {
+  // TODO: Initialize Supabase client
+  // final supabase = Supabase.instance.client;
+
+  Future<List<ServiceWithWorker>> fetchCustomerServices(String customerId) async {
+    try {
+      // TODO: Replace with actual Supabase query
+      // final response = await supabase
+      //     .from('services')
+      //     .select('''
+      //       *,
+      //       service_details(*),
+      //       workers:worker_id(first_name, last_name, avatar_url, phone_number, profession)
+      //     ''')
+      //     .eq('customer_id', customerId)
+      //     .order('created_at', ascending: false);
+
+      await Future.delayed(const Duration(seconds: 1));
+      return _getMockCustomerServices();
+    } catch (e) {
+      throw Exception('Failed to fetch services: $e');
+    }
+  }
+
+  List<ServiceWithWorker> _getMockCustomerServices() {
+    final now = DateTime.now();
+
+    return [
+      ServiceWithWorker(
+        service: Service(
+          id: 's1',
+          workerId: 'w1',
+          customerId: 'c123',
+          serviceTitle: 'Kitchen Sink Repair',
+          description: 'Kitchen sink is leaking and needs urgent repair. Water is dripping constantly.',
+          location: 'House #123, Street 5, Wah Cantt',
+          acceptedStatus: false,
+          createdAt: now.subtract(const Duration(hours: 2)),
+          updatedAt: now.subtract(const Duration(hours: 2)),
+        ),
+        workerName: 'John Smith',
+        workerAvatar: 'https://i.pravatar.cc/150?img=1',
+        workerPhone: '+92-300-1234567',
+        workerProfession: 'Plumber',
+      ),
+      ServiceWithWorker(
+        service: Service(
+          id: 's2',
+          workerId: 'w2',
+          customerId: 'c123',
+          serviceTitle: 'Ceiling Fan Installation',
+          description: 'Need to install ceiling fan in bedroom and fix faulty switches.',
+          location: 'House #123, Street 5, Wah Cantt',
+          acceptedStatus: true,
+          createdAt: now.subtract(const Duration(hours: 5)),
+          updatedAt: now.subtract(const Duration(hours: 3)),
+        ),
+        serviceDetails: ServiceDetails(
+          id: 'sd2',
+          serviceId: 's2',
+          price: 3000,
+          priceUnit: 'PKR',
+          bookingDate: now.subtract(const Duration(hours: 3)),
+          startDate: null,
+          expectedEnd: now.add(const Duration(days: 1)),
+          completedDate: null,
+          paidStatus: false,
+          createdAt: now.subtract(const Duration(hours: 3)),
+          updatedAt: now.subtract(const Duration(hours: 3)),
+        ),
+        workerName: 'Sarah Johnson',
+        workerAvatar: 'https://i.pravatar.cc/150?img=2',
+        workerPhone: '+92-301-9876543',
+        workerProfession: 'Electrician',
+      ),
+      ServiceWithWorker(
+        service: Service(
+          id: 's3',
+          workerId: 'w3',
+          customerId: 'c123',
+          serviceTitle: 'Bathroom Plumbing',
+          description: 'Fix bathroom drainage and install new faucet.',
+          location: 'House #123, Street 5, Wah Cantt',
+          acceptedStatus: true,
+          createdAt: now.subtract(const Duration(days: 1)),
+          updatedAt: now.subtract(const Duration(hours: 1)),
+        ),
+        serviceDetails: ServiceDetails(
+          id: 'sd3',
+          serviceId: 's3',
+          price: 2500,
+          priceUnit: 'PKR',
+          bookingDate: now.subtract(const Duration(hours: 6)),
+          startDate: now.subtract(const Duration(hours: 2)),
+          expectedEnd: now.add(const Duration(hours: 2)),
+          completedDate: null,
+          paidStatus: false,
+          createdAt: now.subtract(const Duration(hours: 6)),
+          updatedAt: now.subtract(const Duration(hours: 2)),
+        ),
+        workerName: 'Mike Davis',
+        workerAvatar: 'https://i.pravatar.cc/150?img=3',
+        workerPhone: '+92-333-4567890',
+        workerProfession: 'Plumber',
+      ),
+      ServiceWithWorker(
+        service: Service(
+          id: 's4',
+          workerId: 'w4',
+          customerId: 'c123',
+          serviceTitle: 'Wall Painting',
+          description: 'Paint living room walls with premium quality paint.',
+          location: 'House #123, Street 5, Wah Cantt',
+          acceptedStatus: true,
+          createdAt: now.subtract(const Duration(days: 3)),
+          updatedAt: now.subtract(const Duration(days: 1)),
+        ),
+        serviceDetails: ServiceDetails(
+          id: 'sd4',
+          serviceId: 's4',
+          price: 8000,
+          priceUnit: 'PKR',
+          bookingDate: now.subtract(const Duration(days: 2)),
+          startDate: now.subtract(const Duration(days: 2)),
+          expectedEnd: now.subtract(const Duration(days: 1)),
+          completedDate: now.subtract(const Duration(days: 1)),
+          paidStatus: true,
+          createdAt: now.subtract(const Duration(days: 2)),
+          updatedAt: now.subtract(const Duration(days: 1)),
+        ),
+        workerName: 'Emily Brown',
+        workerAvatar: 'https://i.pravatar.cc/150?img=4',
+        workerPhone: '+92-345-1122334',
+        workerProfession: 'Painter',
+      ),
+    ];
+  }
+}
 
 class ServiceRequestService {
   // TODO: Initialize Supabase client
@@ -216,5 +358,19 @@ class ServiceRequestService {
         customerPhone: '+92-334-8877665',
       ),
     ];
+  }
+}
+
+class CustomerHandler {
+  final _supabase = Supabase.instance.client;
+  String? get userId => _supabase.auth.currentUser?.id;
+
+  Future<void> insertCustomer(Map<String, dynamic> customerData) async {
+    customerData['id'] = userId;
+    try {
+      await _supabase.from('customers').insert(customerData);
+    } catch (e) {
+      throw Exception('Failed to insert Worker');
+    }
   }
 }
