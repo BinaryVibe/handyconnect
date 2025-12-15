@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:handyconnect/role_selection.dart';
 import 'package:handyconnect/worker_details.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:go_router/go_router.dart';
@@ -19,6 +20,10 @@ final _router = GoRouter(
     GoRoute(path: '/', builder: (context, state) => const HomeScreen()),
     GoRoute(path: '/login', builder: (context, state) => const LoginScreen()),
     GoRoute(path: '/signup', builder: (context, state) => const SignUpScreen()),
+    GoRoute(
+      path: '/signup/select-role',
+      builder: (context, state) => const RoleSelectionScreen(),
+    ),
     GoRoute(
       path: '/c-dashboard',
       builder: (context, state) => const CustomerDashboard(),

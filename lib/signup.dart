@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'login.dart';
 import 'role_selection.dart';
@@ -149,12 +150,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
                         TextButton(
                           onPressed: () {
                             // Navigate to Sign Up Screen
-                            Navigator.push(
-                              context,
-                              MaterialPageRoute(
-                                builder: (context) => const LoginScreen(),
-                              ),
-                            );
+                            context.push('/login');
                           },
                           child: const Text(
                             'Log In',
@@ -270,10 +266,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
 
       // --- CHANGE IS HERE ---
       // Navigate to Role Selection instead of Login
-      Navigator.pushReplacement(
-        context,
-        MaterialPageRoute(builder: (_) => const RoleSelectionScreen()),
-      );
+      context.pushReplacement('/signup/select-role');
     } on AuthException catch (e) {
       _showError(e.message);
     } catch (e) {
