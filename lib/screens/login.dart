@@ -21,7 +21,7 @@ class _LoginScreenState extends State<LoginScreen> {
   final TextEditingController _emailController = TextEditingController();
   final TextEditingController _passwordController = TextEditingController();
   bool _isLoading = false;
-  final UserSupabaseService _userSupabaseService = UserSupabaseService();
+  final UserHandler _userSupabaseService = UserHandler();
 
   // Access the Supabase client
   final _supabase = Supabase.instance.client;

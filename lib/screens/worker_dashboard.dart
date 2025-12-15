@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:handyconnect/providers/worker_provider.dart';
 import '../components/worker_service_card.dart';
-import '../providers/customer_provider.dart';
+import '../providers/service_provider.dart';
 import '../utils/customer_with_service.dart';
 
 // Color Constants
@@ -25,7 +25,7 @@ class WorkerDashboard extends StatefulWidget {
 }
 
 class _WorkerDashboardState extends State<WorkerDashboard> {
-  final ServiceRequestService _serviceRequestService = ServiceRequestService();
+  final WorkerServiceHandler _serviceRequestService = WorkerServiceHandler();
   final WorkerSupabaseService _workerSupabaseService = WorkerSupabaseService();
   late final String? _workerId = _workerSupabaseService.userId;
   List<ServiceWithCustomer> _services = [];

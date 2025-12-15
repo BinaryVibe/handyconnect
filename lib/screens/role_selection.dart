@@ -15,7 +15,7 @@ class _RoleSelectionScreenState extends State<RoleSelectionScreen> {
   String? selectedRole; // Values: 'customer', 'worker'
   
   // Assuming UserSupabaseService is defined in your providers
-  final UserSupabaseService _supabaseService = UserSupabaseService();
+  final UserHandler _supabaseService = UserHandler();
 
   // Define Theme Colors based on your "Coffee" aesthetic
   final Color primaryBrown = const Color(0xFF4E342E); // Dark Brown text/buttons

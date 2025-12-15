@@ -23,7 +23,7 @@ class _WorkerProfileDetailsScreenState extends State<WorkerProfileDetailsScreen>
   final TextEditingController _professionController = TextEditingController();
   final TextEditingController _skillInputController = TextEditingController();
   final List<String> _skills = [];
-  final UserSupabaseService _userSupabaseService = UserSupabaseService();
+  final UserHandler _userSupabaseService = UserHandler();
   final WorkerSupabaseService _workerSupabaseService = WorkerSupabaseService();
 
   // --- CHANGED: Use Bytes for Cross-Platform (Web/Mobile) ---
