@@ -3,7 +3,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 
 class WorkerSupabaseService {
   final _supabase = Supabase.instance.client;
-  late final _userId = _supabase.auth.currentUser?.id;
+  String? get userId => _supabase.auth.currentUser?.id;
 
   // Fetch all workers
   Future<List<Worker>> fetchWorkers() async {
@@ -32,7 +32,7 @@ class WorkerSupabaseService {
   }
 
   Future<void> insertWorker(Map<String, dynamic> workerData) async {
-    workerData['id'] = _userId;
+    workerData['id'] = userId;
     try {
       await _supabase.from('workers').insert(workerData);
     } catch (e) {
