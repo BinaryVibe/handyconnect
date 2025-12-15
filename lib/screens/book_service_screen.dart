@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
-import 'package:supabase_flutter/supabase_flutter.dart'; // Required for database operations
+import 'package:supabase_flutter/supabase_flutter.dart'; 
 import '../models/worker.dart';
 
 // --- Theme Constants ---
@@ -144,7 +144,6 @@ class _BookServiceScreenState extends State<BookServiceScreen> {
             'price': double.parse(_priceController.text.trim()),
             'booking_date': finalDateTime.toIso8601String(),
             'paid_status': false,
-            // 'price_unit': 'USD', // Uncomment if your DB requires this
           });
 
       if (!mounted) return;
@@ -195,39 +194,45 @@ class _BookServiceScreenState extends State<BookServiceScreen> {
         ),
         centerTitle: true,
       ),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(20.0),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            _buildWorkerProfileCard(),
-            const SizedBox(height: 24),
-            const Text(
-              "Service Details",
-              style: TextStyle(
-                fontSize: 18,
-                fontWeight: FontWeight.bold,
-                color: kPrimaryColor,
-              ),
+      // --- UPDATE: Centered Layout for Desktop ---
+      body: Center(
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: 600), // Limit width on desktop
+          child: SingleChildScrollView(
+            padding: const EdgeInsets.all(20.0),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                _buildWorkerProfileCard(),
+                const SizedBox(height: 24),
+                const Text(
+                  "Service Details",
+                  style: TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
+                    color: kPrimaryColor,
+                  ),
+                ),
+                const SizedBox(height: 16),
+                _buildTextField("Service Title", _titleController),
+                const SizedBox(height: 12),
+                _buildTextField("Description", _descriptionController, maxLines: 3),
+                const SizedBox(height: 12),
+                _buildTextField(
+                  "Your Offer (Price)",
+                  _priceController,
+                  inputType: TextInputType.number,
+                  prefix: "\$ ", 
+                ),
+                const SizedBox(height: 12),
+                _buildDateTimeRow(),
+                const SizedBox(height: 12),
+                _buildTextField("Location", _locationController, icon: Icons.location_on_outlined),
+                const SizedBox(height: 30),
+                _buildSubmitButton(),
+              ],
             ),
-            const SizedBox(height: 16),
-            _buildTextField("Service Title", _titleController),
-            const SizedBox(height: 12),
-            _buildTextField("Description", _descriptionController, maxLines: 3),
-            const SizedBox(height: 12),
-            _buildTextField(
-              "Your Offer (Price)",
-              _priceController,
-              inputType: TextInputType.number,
-              prefix: "\$ ", // Change currency symbol if needed
-            ),
-            const SizedBox(height: 12),
-            _buildDateTimeRow(),
-            const SizedBox(height: 12),
-            _buildTextField("Location", _locationController, icon: Icons.location_on_outlined),
-            const SizedBox(height: 30),
-            _buildSubmitButton(),
-          ],
+          ),
         ),
       ),
     );
