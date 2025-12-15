@@ -1,10 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
-import 'package:handyconnect/customer_dashboard.dart';
 import 'package:handyconnect/src/providers/user_provider.dart';
-import 'package:handyconnect/worker_dashboard.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
-import 'signup.dart';
 import 'utils/build_logo.dart';
 
 // --- Color and Style Constants ---
@@ -362,6 +359,4 @@ class _LoginScreenState extends State<LoginScreen> {
       ),
     );
   }
-
-  
 }
