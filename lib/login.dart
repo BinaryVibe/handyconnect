@@ -5,6 +5,7 @@ import 'package:handyconnect/src/providers/user_provider.dart';
 import 'package:handyconnect/worker_dashboard.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'signup.dart';
+import 'utils/build_logo.dart';
 
 // --- Color and Style Constants ---
 const Color kPrimaryColor = Color(0xFF4A2E1E);
@@ -155,7 +156,7 @@ class _LoginScreenState extends State<LoginScreen> {
                       children: <Widget>[
                         const SizedBox(height: 25),
 
-                        _buildLogo(),
+                        buildLogo(),
 
                         const SizedBox(height: 50),
 
@@ -362,21 +363,5 @@ class _LoginScreenState extends State<LoginScreen> {
     );
   }
 
-  Widget _buildLogo() {
-    return Container(
-      padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(
-        color: kPrimaryColor,
-        shape: BoxShape.circle,
-        boxShadow: [
-          BoxShadow(
-            color: kPrimaryColor.withValues(alpha: 0.3),
-            blurRadius: 20,
-            spreadRadius: 5,
-          ),
-        ],
-      ),
-      child: const Icon(Icons.handyman, size: 60, color: Colors.white),
-    );
-  }
+  
 }

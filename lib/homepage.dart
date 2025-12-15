@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
+import 'utils/build_logo.dart';
+
 // Color Constants (matching your theme)
 const Color kPrimaryColor = Color.fromARGB(255, 74, 46, 30);
 const Color kFieldColor = Color(0xFFE9DFD8);
@@ -84,7 +86,7 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
             crossAxisAlignment: CrossAxisAlignment.center,
             children: [
               const SizedBox(height: 40),
-              _buildLogo(),
+              buildLogo(),
               const SizedBox(height: 40),
               _buildHeroSection(),
               const SizedBox(height: 50),
@@ -248,27 +250,7 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
     );
   }
 
-  Widget _buildLogo() {
-    return Container(
-      padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(
-        color: kPrimaryColor,
-        shape: BoxShape.circle,
-        boxShadow: [
-          BoxShadow(
-            color: kPrimaryColor.withValues(alpha: 0.3),
-            blurRadius: 20,
-            spreadRadius: 5,
-          ),
-        ],
-      ),
-      child: const Icon(
-        Icons.handyman,
-        size: 60,
-        color: Colors.white,
-      ),
-    );
-  }
+  
 
   Widget _buildHeroSection() {
     return Column(

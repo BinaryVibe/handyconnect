@@ -3,6 +3,7 @@ import 'package:go_router/go_router.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'login.dart';
 import 'role_selection.dart';
+import 'utils/build_logo.dart';
 
 // NEW THEME COLORS
 const Color kPrimaryColor = Color(0xFF4A2E1E);
@@ -57,7 +58,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
                 ),
                 child: Column(
                   children: [
-                    _buildLogo(),
+                    buildLogo(),
 
                     const SizedBox(height: 50),
 
@@ -282,21 +283,5 @@ class _SignUpScreenState extends State<SignUpScreen> {
     ).showSnackBar(SnackBar(content: Text(msg), backgroundColor: Colors.red));
   }
 
-  Widget _buildLogo() {
-    return Container(
-      padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(
-        color: kPrimaryColor,
-        shape: BoxShape.circle,
-        boxShadow: [
-          BoxShadow(
-            color: kPrimaryColor.withValues(alpha: 0.3),
-            blurRadius: 20,
-            spreadRadius: 5,
-          ),
-        ],
-      ),
-      child: const Icon(Icons.handyman, size: 60, color: Colors.white),
-    );
-  }
+  
 }
