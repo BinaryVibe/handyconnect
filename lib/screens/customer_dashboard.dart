@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
-// import 'package:supabase_flutter/supabase_flutter.dart';
+import '/screens/customer_booking_screen.dart';
 import '../models/worker.dart';
 import '../providers/worker_provider.dart';
 
@@ -83,6 +83,23 @@ class _CustomerDashboardState extends State<CustomerDashboard> {
 
   @override
   Widget build(BuildContext context) {
+    late Widget page;
+    switch (_selectedIndex) {
+      case 0:
+        page = _buildHomePage();
+        break;
+      case 1:
+        page = CustomerBookingsPage();
+        break;
+      case 2:
+        page = Placeholder();
+        break;
+      case 3:
+        page = Placeholder();
+        break;
+      default:
+        throw UnimplementedError("No widger for $_selectedIndex");
+    }
     return LayoutBuilder(
       builder: (context, constraints) {
         final isMobile = constraints.maxWidth < 600;
@@ -90,7 +107,7 @@ class _CustomerDashboardState extends State<CustomerDashboard> {
         if (isMobile) {
           return Scaffold(
             backgroundColor: kBackgroundColor,
-            body: _buildMainBody(),
+            body: page,
             bottomNavigationBar: _buildBottomNavigationBar(),
           );
         }
@@ -100,7 +117,7 @@ class _CustomerDashboardState extends State<CustomerDashboard> {
           body: Row(
             children: [
               _buildNavigationRail(),
-              Expanded(child: _buildMainBody()),
+              Expanded(child: page),
             ],
           ),
         );
@@ -137,7 +154,7 @@ class _CustomerDashboardState extends State<CustomerDashboard> {
     );
   }
 
-  Column _buildMainBody() {
+  Widget _buildHomePage() {
     // print("filteredWorkerList");
     // print(_filteredWorkers);
     return Column(
@@ -152,8 +169,8 @@ class _CustomerDashboardState extends State<CustomerDashboard> {
                 children: [
                   const Text("Welcome!", style: TextStyle(color: Colors.white)),
                   IconButton(
-                    onPressed: () => {},
-                    icon: const Icon(Icons.notifications, color: Colors.white),
+                    onPressed: _loadWorkers,
+                    icon: const Icon(Icons.refresh, color: Colors.white),
                   ),
                 ],
               ),
