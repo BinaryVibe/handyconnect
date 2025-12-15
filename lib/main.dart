@@ -1,16 +1,21 @@
 import 'package:flutter/material.dart';
-import 'package:handyconnect/screens/role_selection.dart';
-import 'package:handyconnect/screens/worker_details.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:go_router/go_router.dart';
 
-// For testing
-import 'screens/signup.dart';
-import 'models/worker.dart';
-import 'screens/worker_dashboard.dart';
-import 'screens/customer_dashboard.dart';
-import 'screens/login.dart';
+// --- Screen Imports ---
 import 'screens/homepage.dart';
+import 'screens/login.dart';
+import 'screens/signup.dart';
+import 'screens/role_selection.dart';
+import 'screens/customer_dashboard.dart';
+import 'screens/worker_dashboard.dart';
+import 'screens/worker_details.dart';
+
+// 🛑 THIS WAS MISSING: Import the new Booking Screen
+import 'screens/book_service_screen.dart'; 
+
+// --- Model Imports ---
+import 'models/worker.dart';
 
 const Color kPrimaryColor = Color.fromARGB(255, 74, 46, 30);
 
@@ -32,22 +37,38 @@ final _router = GoRouter(
       path: '/w-dashboard',
       builder: (context, state) => const WorkerDashboard(),
     ),
+    
+    // --- Worker Details & Booking Route ---
     GoRoute(
       path: '/c-dashboard/w-details',
       builder: (context, state) {
+        // We expect a 'Worker' object to be passed in 'extra'
         Worker worker = state.extra as Worker;
         return WorkerDetailScreen(worker: worker);
       },
+      routes: [
+        // This is the sub-route for booking
+        GoRoute(
+          path: 'book-service', 
+          builder: (context, state) {
+            Worker worker = state.extra as Worker;
+            return BookServiceScreen(worker: worker);
+          },
+        ),
+      ],
     ),
   ],
 );
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  
+  // Initialize Supabase
   await Supabase.initialize(
     url: 'https://afgvpnvqxzmosfogcysc.supabase.co',
     anonKey: 'sb_publishable_bLKZ8iWn8-BenfJLuq0TaA_ZVgzUItK',
   );
+  
   runApp(const HandyConnect());
 }
 

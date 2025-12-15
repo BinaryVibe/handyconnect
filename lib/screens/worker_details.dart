@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart'; // <--- Added Import
 import '../models/worker.dart';
 
 // Color Constants
@@ -226,9 +227,7 @@ class WorkerDetailScreen extends StatelessWidget {
               style: TextStyle(
                 fontSize: 18,
                 fontWeight: FontWeight.bold,
-                color: worker.availability
-                    ? Colors.green[700]
-                    : Colors.red[700],
+                color: worker.availability ? Colors.green[700] : Colors.red[700],
               ),
             ),
           ],
@@ -258,26 +257,11 @@ class WorkerDetailScreen extends StatelessWidget {
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceAround,
               children: [
-                _buildStatItem(
-                  Icons.star,
-                  worker.avgRating.toStringAsFixed(1),
-                  'Rating',
-                  Colors.amber,
-                ),
+                _buildStatItem(Icons.star, worker.avgRating.toStringAsFixed(1), 'Rating', Colors.amber),
                 Container(height: 50, width: 1, color: professionColor),
-                _buildStatItem(
-                  Icons.attach_money,
-                  'Rs. ${(worker.earnings / 1000).toStringAsFixed(0)}k',
-                  'Earnings',
-                  Colors.green,
-                ),
+                _buildStatItem(Icons.attach_money, 'Rs. ${(worker.earnings / 1000).toStringAsFixed(0)}k', 'Earnings', Colors.green),
                 Container(height: 50, width: 1, color: professionColor),
-                _buildStatItem(
-                  Icons.verified,
-                  worker.verifiedStatus ? 'Yes' : 'No',
-                  'Verified',
-                  Colors.blue,
-                ),
+                _buildStatItem(Icons.verified, worker.verifiedStatus ? 'Yes' : 'No', 'Verified', Colors.blue),
               ],
             ),
           ],
@@ -286,12 +270,7 @@ class WorkerDetailScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildStatItem(
-    IconData icon,
-    String value,
-    String label,
-    Color color,
-  ) {
+  Widget _buildStatItem(IconData icon, String value, String label, Color color) {
     return Column(
       children: [
         Icon(icon, color: color, size: 28),
@@ -516,6 +495,7 @@ class WorkerDetailScreen extends StatelessWidget {
     );
   }
 
+  // --- UPDATED DIALOG LOGIC ---
   void _showHireDialog(BuildContext context) {
     showDialog(
       context: context,
@@ -581,7 +561,7 @@ class WorkerDetailScreen extends StatelessWidget {
             ),
             const SizedBox(height: 16),
             Text(
-              'The worker will receive your request and contact you shortly.',
+              'You will be redirected to the booking form to enter service details.',
               style: TextStyle(
                 fontSize: 13,
                 color: kPrimaryColor.withOpacity(0.7),
@@ -591,22 +571,14 @@ class WorkerDetailScreen extends StatelessWidget {
         ),
         actions: [
           TextButton(
-            onPressed: () => Navigator.pop(context),
+            onPressed: () => context.pop(),
             child: Text('Cancel', style: TextStyle(color: secondaryTextColor)),
           ),
           ElevatedButton(
             onPressed: () {
-              Navigator.pop(context);
-              // TODO: Implement hire logic - create service request
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(
-                  content: Text('Service request sent to ${worker.firstName}!'),
-                  backgroundColor: Colors.green,
-                  behavior: SnackBarBehavior.floating,
-                ),
-              );
-              // Navigate back to dashboard
-              Navigator.pop(context);
+              context.pop(); // Close Dialog
+              // Navigate to Book Service Screen
+              context.push('/c-dashboard/w-details/book-service', extra: worker);
             },
             style: ElevatedButton.styleFrom(
               backgroundColor: kPrimaryColor,
