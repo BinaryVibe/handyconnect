@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 // import 'package:supabase_flutter/supabase_flutter.dart';
 import 'src/models/worker.dart';
 import 'src/providers/worker_provider.dart';
@@ -43,9 +44,7 @@ class _CustomerDashboardState extends State<CustomerDashboard> {
   Future<void> _loadWorkers() async {
     setState(() => _isLoading = true);
     try {
-      print('before fetch');
       final workers = await _supabaseService.fetchWorkers();
-      print('after fetch');
       setState(() {
         _workers = workers;
         _filteredWorkers = workers;
@@ -296,7 +295,7 @@ class WorkerCard extends StatelessWidget {
       color: listTileColor,
       child: InkWell(
         onTap: () {
-          // TODO: Navigate to worker detail page
+          context.push('/c-dashboard/w-details', extra: worker);
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(content: Text('View ${worker.firstName}\'s profile')),
           );

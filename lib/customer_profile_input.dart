@@ -105,7 +105,7 @@ class _CustomerProfileScreenState extends State<CustomerProfileScreen> {
           ),
         );
         // Navigate to next screen logic here...
-        context.go('/customer-dashboard');
+        context.go('/c-dashboard');
       }
 
     } catch (e) {

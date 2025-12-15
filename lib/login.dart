@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 import 'package:handyconnect/customer_dashboard.dart';
 import 'package:handyconnect/src/providers/user_provider.dart';
 import 'package:handyconnect/worker_dashboard.dart';
@@ -66,14 +67,14 @@ class _LoginScreenState extends State<LoginScreen> {
         ),
       );
 
-      late Widget landingPage;
+      late String landingPage;
       final role = await _userSupabaseService.getValue('role');
       switch (role) {
         case 'worker':
-          landingPage = WorkerDashboard();
+          landingPage = '/w-dashboard';
           break;
         case 'customer':
-          landingPage = CustomerDashboard();
+          landingPage = '/c-dashboard';
           break;
         default:
           throw UnimplementedError(
@@ -81,10 +82,7 @@ class _LoginScreenState extends State<LoginScreen> {
           );
       }
 
-      Navigator.pushReplacement(
-        context,
-        MaterialPageRoute(builder: (_) => landingPage),
-      );
+      context.pushReplacement(landingPage);
     } on AuthException catch (error) {
       // --- HANDLE SUPABASE AUTH ERRORS ---
       if (!mounted) return;
@@ -251,12 +249,7 @@ class _LoginScreenState extends State<LoginScreen> {
                             TextButton(
                               onPressed: () {
                                 // Navigate to Sign Up Screen
-                                Navigator.push(
-                                  context,
-                                  MaterialPageRoute(
-                                    builder: (context) => const SignUpScreen(),
-                                  ),
-                                );
+                                context.push('/signup');
                               },
                               child: const Text(
                                 'Sign Up',

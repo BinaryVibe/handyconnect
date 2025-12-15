@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
+import 'package:handyconnect/worker_details.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:go_router/go_router.dart';
 
 // For testing
 import 'signup.dart';
+import 'src/models/worker.dart';
 import 'worker_dashboard.dart';
 import 'customer_dashboard.dart';
 import 'login.dart';
@@ -15,10 +17,23 @@ final _router = GoRouter(
   initialLocation: '/',
   routes: [
     GoRoute(path: '/', builder: (context, state) => const HomeScreen()),
-    GoRoute(path: '/login', builder: (context, state) => const LoginScreen(),),
-    GoRoute(path: '/signup', builder: (context, state) => const SignUpScreen(),),
-    GoRoute(path: '/customer-dashboard', builder: (context, state) => const CustomerDashboard(),),
-    GoRoute(path: '/worker-dashboard', builder: (context, state) => const WorkerDashboard(),),
+    GoRoute(path: '/login', builder: (context, state) => const LoginScreen()),
+    GoRoute(path: '/signup', builder: (context, state) => const SignUpScreen()),
+    GoRoute(
+      path: '/c-dashboard',
+      builder: (context, state) => const CustomerDashboard(),
+    ),
+    GoRoute(
+      path: '/w-dashboard',
+      builder: (context, state) => const WorkerDashboard(),
+    ),
+    GoRoute(
+      path: '/c-dashboard/w-details',
+      builder: (context, state) {
+        Worker worker = state.extra as Worker;
+        return WorkerDetailScreen(worker: worker);
+      },
+    ),
   ],
 );
 
