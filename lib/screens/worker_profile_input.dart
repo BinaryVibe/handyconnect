@@ -24,7 +24,7 @@ class _WorkerProfileDetailsScreenState extends State<WorkerProfileDetailsScreen>
   final TextEditingController _skillInputController = TextEditingController();
   final List<String> _skills = [];
   final UserHandler _userSupabaseService = UserHandler();
-  final WorkerSupabaseService _workerSupabaseService = WorkerSupabaseService();
+  final WorkerHandler _workerSupabaseService = WorkerHandler();
 
   // --- CHANGED: Use Bytes for Cross-Platform (Web/Mobile) ---
   Uint8List? _imageBytes;
