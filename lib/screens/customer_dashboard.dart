@@ -28,7 +28,7 @@ class CustomerDashboard extends StatefulWidget {
 }
 
 class _CustomerDashboardState extends State<CustomerDashboard> {
-  final WorkerSupabaseService _supabaseService = WorkerSupabaseService();
+  final WorkerHandler _supabaseService = WorkerHandler();
   final TextEditingController _searchController = TextEditingController();
 
   List<Worker> _workers = [];
