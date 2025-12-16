@@ -1,5 +1,4 @@
 class ServiceDetails {
-  final String id;
   final String serviceId;
 
   final double? price;
@@ -16,7 +15,6 @@ class ServiceDetails {
   final DateTime updatedAt;
 
   ServiceDetails({
-    required this.id,
     required this.serviceId,
     this.price,
     this.priceUnit,
@@ -31,7 +29,6 @@ class ServiceDetails {
 
   factory ServiceDetails.fromJson(Map<String, dynamic> json) {
     return ServiceDetails(
-      id: json['id'],
       serviceId: json['service_id'],
       price: json['price'] != null ? (json['price'] as num).toDouble() : null,
       priceUnit: json['price_unit'],
@@ -55,7 +52,6 @@ class ServiceDetails {
 
   Map<String, dynamic> toJson() {
     return {
-      'id': id,
       'service_id': serviceId,
       'price': price,
       'price_unit': priceUnit,
