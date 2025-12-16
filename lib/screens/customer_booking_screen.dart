@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:handyconnect/components/customer_service_card.dart';
+import 'package:handyconnect/providers/customer_provider.dart';
 import 'package:handyconnect/utils/service_with_worker.dart';
 import '../providers/service_provider.dart';
 
@@ -23,7 +24,7 @@ class CustomerBookingsPage extends StatefulWidget {
 
 class _CustomerBookingsPageState extends State<CustomerBookingsPage> {
   final CustomerServiceHandler _serviceService = CustomerServiceHandler();
-  final String _customerId = 'c123'; // TODO: Get from auth
+  final CustomerHandler _customerHandler = CustomerHandler();
 
   List<ServiceWithWorker> _services = [];
   List<ServiceWithWorker> _filteredServices = [];
@@ -39,13 +40,14 @@ class _CustomerBookingsPageState extends State<CustomerBookingsPage> {
   Future<void> _loadServices() async {
     setState(() => _isLoading = true);
     try {
-      final services = await _serviceService.fetchCustomerServices(_customerId);
+      final services = await _serviceService.fetchCustomerServices(_customerHandler.userId!);
       setState(() {
         _services = services;
         _filteredServices = services;
         _isLoading = false;
       });
     } catch (e) {
+      print(e.toString());
       setState(() => _isLoading = false);
       _showError('Failed to load bookings');
     }
