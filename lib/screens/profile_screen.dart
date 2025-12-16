@@ -86,6 +86,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
           _lastNameController.text = profileData['last_name'] ?? '';
           _phoneController.text = profileData['phone_number'] ?? '';
           _email = profileData['email'] ?? '';
+          // Add timestamp to force image refresh
           _avatarUrl = profileData['avatar_url'] != null 
               ? '${profileData['avatar_url']}?t=${DateTime.now().millisecondsSinceEpoch}' 
               : null;
@@ -233,7 +234,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
     showDialog(
       context: context,
-      // Renamed argument to 'dialogContext' to avoid confusing it with the screen's 'context'
       builder: (dialogContext) {
         return AlertDialog(
           title: const Text("Change Password"),
@@ -247,33 +247,27 @@ class _ProfileScreenState extends State<ProfileScreen> {
           ),
           actions: [
             TextButton(
-              onPressed: () => Navigator.pop(dialogContext), // Close dialog using its own context
+              onPressed: () => Navigator.pop(dialogContext), 
               child: const Text("Cancel"),
             ),
             ElevatedButton(
               onPressed: () async {
                 final newPass = passwordController.text.trim();
                 if (newPass.length < 6) {
-                  // We can use dialogContext here because the dialog is still open
                   ScaffoldMessenger.of(dialogContext).showSnackBar(
                     const SnackBar(content: Text('Password must be at least 6 chars')),
                   );
                   return;
                 }
 
-                // 1. Close the dialog immediately
-                Navigator.pop(dialogContext);
-
-                // 2. Show loading on the main screen
-                setState(() => _isSaving = true);
+                Navigator.pop(dialogContext); // Close dialog
+                setState(() => _isSaving = true); // Start Loading
 
                 try {
-                  // 3. Perform the update
                   await Supabase.instance.client.auth.updateUser(
                     UserAttributes(password: newPass),
                   );
 
-                  // 4. Show Success SnackBar using the Main Screen's 'context'
                   if (mounted) {
                     ScaffoldMessenger.of(context).showSnackBar(
                       const SnackBar(
@@ -301,6 +295,75 @@ class _ProfileScreenState extends State<ProfileScreen> {
       },
     );
   }
+
+  // --- 5. CHANGE EMAIL LOGIC (Dialog) ---
+  void _showChangeEmailDialog() {
+    final emailController = TextEditingController();
+
+    showDialog(
+      context: context,
+      builder: (dialogContext) {
+        return AlertDialog(
+          title: const Text("Change Email"),
+          content: TextField(
+            controller: emailController,
+            keyboardType: TextInputType.emailAddress,
+            decoration: const InputDecoration(
+              hintText: "Enter new email",
+              prefixIcon: Icon(Icons.email_outlined),
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(dialogContext),
+              child: const Text("Cancel"),
+            ),
+            ElevatedButton(
+              onPressed: () async {
+                final newEmail = emailController.text.trim();
+                if (newEmail.isEmpty || !newEmail.contains('@')) {
+                  ScaffoldMessenger.of(dialogContext).showSnackBar(
+                    const SnackBar(content: Text('Please enter a valid email')),
+                  );
+                  return;
+                }
+
+                Navigator.pop(dialogContext); // Close dialog
+                setState(() => _isSaving = true); // Start Loading
+
+                try {
+                  await Supabase.instance.client.auth.updateUser(
+                    UserAttributes(email: newEmail),
+                  );
+
+                  if (mounted) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(
+                        content: Text('Confirmation link sent to $newEmail! Please verify.'),
+                        backgroundColor: Colors.blue,
+                        duration: const Duration(seconds: 5),
+                      ),
+                    );
+                  }
+                } catch (e) {
+                  if (mounted) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(content: Text('Error: $e'), backgroundColor: Colors.red),
+                    );
+                  }
+                } finally {
+                  if (mounted) setState(() => _isSaving = false);
+                }
+              },
+              style: ElevatedButton.styleFrom(backgroundColor: kPrimaryColor),
+              child: const Text("Update", style: TextStyle(color: Colors.white)),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
   // --- Worker Helper Methods ---
   void _addSkill() {
     final newSkill = _skillController.text.trim();
@@ -361,7 +424,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   // --- Buttons Section ---
                   _buildSaveButton(),
                   const SizedBox(height: 16),
-                  _buildChangePasswordButton(), // NEW BUTTON HERE
+                  _buildChangePasswordButton(), 
+                  const SizedBox(height: 12),
+                  _buildChangeEmailButton(), // NEW BUTTON
                   
                   const SizedBox(height: 40),
                 ],
@@ -512,7 +577,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
     );
   }
 
-  // --- NEW: Change Password Button Widget ---
   Widget _buildChangePasswordButton() {
     return SizedBox(
       width: double.infinity,
@@ -524,6 +588,22 @@ class _ProfileScreenState extends State<ProfileScreen> {
           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
         ),
         child: const Text("Change Password", style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: kPrimaryColor)),
+      ),
+    );
+  }
+
+  // --- NEW: Change Email Button ---
+  Widget _buildChangeEmailButton() {
+    return SizedBox(
+      width: double.infinity,
+      height: 55,
+      child: OutlinedButton(
+        onPressed: _isSaving ? null : _showChangeEmailDialog,
+        style: OutlinedButton.styleFrom(
+          side: const BorderSide(color: kPrimaryColor, width: 2),
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+        ),
+        child: const Text("Change Email", style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: kPrimaryColor)),
       ),
     );
   }
