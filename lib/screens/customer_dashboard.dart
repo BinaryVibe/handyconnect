@@ -3,6 +3,7 @@ import 'package:go_router/go_router.dart';
 import '/screens/customer_booking_screen.dart';
 import '../models/worker.dart';
 import '../providers/worker_provider.dart';
+import 'customer_profile_screen.dart';
 
 const Color kPrimaryColor = Color.fromARGB(
   255,
@@ -95,7 +96,7 @@ class _CustomerDashboardState extends State<CustomerDashboard> {
         page = Placeholder();
         break;
       case 3:
-        page = Placeholder();
+        page = const CustomerProfileScreen();
         break;
       default:
         throw UnimplementedError("No widger for $_selectedIndex");
