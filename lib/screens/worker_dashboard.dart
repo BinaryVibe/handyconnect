@@ -4,6 +4,7 @@ import '../components/worker_service_card.dart';
 import '../providers/service_provider.dart';
 import '../utils/customer_with_service.dart';
 import 'worker_profile_screen.dart';
+import 'profile_screen.dart';
 // Color Constants
 const Color kPrimaryColor = Color.fromARGB(255, 74, 46, 30);
 const Color kFieldColor = Color(0xFFE9DFD8);
@@ -97,7 +98,7 @@ class _WorkerDashboardState extends State<WorkerDashboard> {
         page = Placeholder();
         break;
       case 3:
-        page = WorkerProfileScreen(workerId: _workerId!);
+        page = ProfileScreen();
         break;
       default:
         throw UnimplementedError("No widger for $_selectedIndex");
