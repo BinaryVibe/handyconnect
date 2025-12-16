@@ -1,4 +1,3 @@
-import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:go_router/go_router.dart';
@@ -23,7 +22,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
   bool _isLoading = true;
   bool _isSaving = false;
   bool _isUploading = false;
-  bool _isWorker = false; // Flag to check user type
+  bool _isWorker = false;
   String? _userId;
 
   // --- Common Controllers ---
@@ -59,7 +58,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
     super.dispose();
   }
 
-  // --- 1. LOAD DATA (MERGED LOGIC) ---
+  // --- 1. LOAD DATA ---
   Future<void> _loadProfileData() async {
     try {
       final client = Supabase.instance.client;
@@ -71,7 +70,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
       }
       _userId = user.id;
 
-      // A. Fetch Basic Profile (Common for all)
+      // A. Fetch Basic Profile
       final profileData = await client
           .from('profiles')
           .select()
@@ -83,18 +82,19 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
       if (mounted) {
         setState(() {
-          // Map Common Data
           _firstNameController.text = profileData['first_name'] ?? '';
           _lastNameController.text = profileData['last_name'] ?? '';
           _phoneController.text = profileData['phone_number'] ?? '';
           _email = profileData['email'] ?? '';
-          _avatarUrl = profileData['avatar_url'];
+          // Add timestamp to force image refresh
+          _avatarUrl = profileData['avatar_url'] != null 
+              ? '${profileData['avatar_url']}?t=${DateTime.now().millisecondsSinceEpoch}' 
+              : null;
         });
       }
 
       // B. Conditional Fetch based on Role
       if (_isWorker) {
-        // --- Load Worker Data ---
         final workerData = await client
             .from('workers')
             .select()
@@ -111,7 +111,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
           });
         }
       } else {
-        // --- Load Customer Data ---
         final customerData = await client
             .from('customers')
             .select('date_joined')
@@ -135,7 +134,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
     }
   }
 
-  // --- 2. IMAGE UPLOAD ---
+  // --- 2. IMAGE UPLOAD (UPDATED BUCKET NAME) ---
   Future<void> _uploadProfilePicture() async {
     try {
       final XFile? image = await _picker.pickImage(
@@ -147,46 +146,61 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
       setState(() => _isUploading = true);
 
-      final file = File(image.path);
-      final fileExt = image.path.split('.').last;
-      final fileName = '$_userId/profile_${DateTime.now().millisecondsSinceEpoch}.$fileExt';
+      final bytes = await image.readAsBytes();
+      final fileExt = image.name.split('.').last;
+      final fileName = '$_userId/profile.$fileExt';
 
-      // Upload
+      // CHANGE HERE: 'avatars' instead of 'profile_pics'
       await Supabase.instance.client.storage
-          .from('profile_pics')
-          .upload(fileName, file, fileOptions: const FileOptions(upsert: true));
+          .from('avatars') 
+          .uploadBinary(
+            fileName,
+            bytes,
+            fileOptions: FileOptions(
+              upsert: true,
+              contentType: image.mimeType ?? 'image/jpeg',
+            ),
+          );
 
-      // Get URL
+      // CHANGE HERE: 'avatars' instead of 'profile_pics'
       final imageUrl = Supabase.instance.client.storage
-          .from('profile_pics')
+          .from('avatars')
           .getPublicUrl(fileName);
+      
+      final imageUrlWithTimestamp = '$imageUrl?t=${DateTime.now().millisecondsSinceEpoch}';
 
-      // Save URL to DB
       await Supabase.instance.client
           .from('profiles')
           .update({'avatar_url': imageUrl})
           .eq('id', _userId!);
 
       setState(() {
-        _avatarUrl = imageUrl;
+        _avatarUrl = imageUrlWithTimestamp;
         _isUploading = false;
       });
 
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Profile picture updated!'), backgroundColor: Colors.green),
+        );
+      }
+
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Upload failed: $e')));
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Upload failed: $e'), backgroundColor: Colors.red),
+        );
         setState(() => _isUploading = false);
       }
     }
   }
 
-  // --- 3. SAVE DATA (MERGED LOGIC) ---
+  // --- 3. SAVE DATA ---
   Future<void> _saveChanges() async {
     setState(() => _isSaving = true);
     try {
       final client = Supabase.instance.client;
 
-      // A. Update Common Profile Data
       await client.from('profiles').update({
         'first_name': _firstNameController.text.trim(),
         'last_name': _lastNameController.text.trim(),
@@ -194,7 +208,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
         'updated_at': DateTime.now().toIso8601String(),
       }).eq('id', _userId!);
 
-      // B. Conditional Update for Worker
       if (_isWorker) {
         await client.from('workers').update({
           'profession': _professionController.text.trim(),
@@ -217,7 +230,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
     }
   }
 
-  // --- Worker Helper Methods ---
+  // --- Helper Methods ---
   void _addSkill() {
     final newSkill = _skillController.text.trim();
     if (newSkill.isNotEmpty && !_skills.contains(newSkill)) {
@@ -239,14 +252,11 @@ class _ProfileScreenState extends State<ProfileScreen> {
       return const Center(child: CircularProgressIndicator(color: kPrimaryColor));
     }
 
-    // Constraints for Desktop Responsiveness
     return Center(
       child: ConstrainedBox(
-        // If worker, we need more width for side-by-side cards. If customer, narrower is fine.
         constraints: BoxConstraints(maxWidth: _isWorker ? 1000 : 600),
         child: LayoutBuilder(
           builder: (context, constraints) {
-            // Mobile check
             final isMobile = constraints.maxWidth < 800;
 
             return SingleChildScrollView(
@@ -256,9 +266,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   _buildHeader(),
                   const SizedBox(height: 24),
 
-                  // --- CONDITIONAL LAYOUT ---
                   if (_isWorker) ...[
-                    // WORKER LAYOUT
                     if (isMobile) ...[
                       _buildPersonalInfoCard(),
                       const SizedBox(height: 16),
@@ -274,10 +282,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
                       ),
                     ]
                   ] else ...[
-                    // CUSTOMER LAYOUT (Just Personal Info)
                     _buildPersonalInfoCard(),
                   ],
-                  // ---------------------------
 
                   const SizedBox(height: 30),
                   _buildSaveButton(),
@@ -290,8 +296,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
       ),
     );
   }
-
-  // --- WIDGETS ---
 
   Widget _buildHeader() {
     return Container(
@@ -333,7 +337,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
           ),
           const SizedBox(height: 4),
           
-          // Show Profession for Worker, Date Joined for Customer
           if (_isWorker)
              Text(_professionController.text.isNotEmpty ? _professionController.text : "No profession set", style: TextStyle(fontSize: 16, color: Colors.brown[600]))
           else if (_dateJoined != null)
