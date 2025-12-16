@@ -13,4 +13,18 @@ class CustomerHandler {
       throw Exception('Failed to insert Worker');
     }
   }
+
+  Future<dynamic> getValue(String field) async {
+    try {
+      final response = await _supabase
+          .from('customers')
+          .select(field)
+          .eq('id', userId as String)
+          .limit(1)
+          .single();
+      return response[field];
+    } catch (e) {
+      throw Exception(e.toString());
+    }
+  }
 }
