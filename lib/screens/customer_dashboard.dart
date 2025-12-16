@@ -3,7 +3,6 @@ import 'package:go_router/go_router.dart';
 import '/screens/customer_booking_screen.dart';
 import '../models/worker.dart';
 import '../providers/worker_provider.dart';
-import 'customer_profile_screen.dart';
 import 'profile_screen.dart';
 
 const Color kPrimaryColor = Color.fromARGB(

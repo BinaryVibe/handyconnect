@@ -3,7 +3,6 @@ import 'package:handyconnect/providers/worker_provider.dart';
 import '../components/worker_service_card.dart';
 import '../providers/service_provider.dart';
 import '../utils/customer_with_service.dart';
-import 'worker_profile_screen.dart';
 import 'profile_screen.dart';
 // Color Constants
 const Color kPrimaryColor = Color.fromARGB(255, 74, 46, 30);
