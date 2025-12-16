@@ -36,7 +36,7 @@ class UserHandler {
           .eq('id', userId as String)
           .limit(1)
           .single();
-      return response['role'];
+      return response[field];
     } catch (e) {
       throw Exception(e.toString());
     }
