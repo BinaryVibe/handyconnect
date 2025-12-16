@@ -1,7 +1,7 @@
 import '../models/worker.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
-class WorkerSupabaseService {
+class WorkerHandler {
   final _supabase = Supabase.instance.client;
   String? get userId => _supabase.auth.currentUser?.id;
 
