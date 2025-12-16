@@ -193,6 +193,7 @@ class _LoginScreenState extends State<LoginScreen> {
                             child: TextButton(
                               onPressed: () {
                                 // TODO: Implement Reset Password Logic
+                                context.push('/forgot-password');
                               },
                               child: const Text(
                                 'Forgot Password?',
