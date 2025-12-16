@@ -10,7 +10,7 @@ import 'screens/role_selection.dart';
 import 'screens/customer_dashboard.dart';
 import 'screens/worker_dashboard.dart';
 import 'screens/worker_details.dart';
-import 'screens/book_service_screen.dart'; 
+import 'screens/book_service_screen.dart';
 
 // --- NEW IMPORTS: Password Reset Flow ---
 import 'screens/forgot_password.dart';
@@ -22,12 +22,16 @@ import 'models/worker.dart';
 const Color kPrimaryColor = Color.fromARGB(255, 74, 46, 30);
 
 final _router = GoRouter(
-  initialLocation: '/https://afgvpnvqxzmosfogcysc.supabase.co/auth/v1/verify?token=pkce_dcbc641d7ce100873f4e25ca3d28cc61d4cbcdff80e9cb2c3d1dc9a6&type=recovery&redirect_to=http://localhost:56994/',
+  initialLocation: '/',
   routes: [
     GoRoute(path: '/', builder: (context, state) => const HomeScreen()),
     GoRoute(path: '/login', builder: (context, state) => const LoginScreen()),
     GoRoute(path: '/signup', builder: (context, state) => const SignUpScreen()),
-    
+    GoRoute(
+      path: '/signup/select-role',
+      builder: (context, state) => const RoleSelectionScreen(),
+    ),
+
     // --- NEW ROUTE: Request Password Reset ---
     GoRoute(
       path: '/forgot-password',
@@ -39,12 +43,8 @@ final _router = GoRouter(
       path: '/update-password',
       builder: (context, state) => const UpdatePasswordScreen(),
     ),
-    // -----------------------------------------------------------
 
-    GoRoute(
-      path: '/signup/select-role',
-      builder: (context, state) => const RoleSelectionScreen(),
-    ),
+    // -----------------------------------------------------------
     GoRoute(
       path: '/c-dashboard',
       builder: (context, state) => const CustomerDashboard(),
@@ -53,7 +53,7 @@ final _router = GoRouter(
       path: '/w-dashboard',
       builder: (context, state) => const WorkerDashboard(),
     ),
-    
+
     // --- Worker Details & Booking Route ---
     GoRoute(
       path: '/c-dashboard/w-details',
@@ -65,7 +65,7 @@ final _router = GoRouter(
       routes: [
         // This is the sub-route for booking
         GoRoute(
-          path: 'book-service', 
+          path: 'book-service',
           builder: (context, state) {
             Worker worker = state.extra as Worker;
             return BookServiceScreen(worker: worker);
@@ -78,7 +78,7 @@ final _router = GoRouter(
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  
+
   // Initialize Supabase
   await Supabase.initialize(
     url: 'https://afgvpnvqxzmosfogcysc.supabase.co',
@@ -86,8 +86,8 @@ Future<void> main() async {
   );
 
   // --- PASSWORD RECOVERY LISTENER ---
-  // This listens for the specific event when a user clicks a "Reset Password" 
-  // email link. Supabase logs them in temporarily, and we redirect them 
+  // This listens for the specific event when a user clicks a "Reset Password"
+  // email link. Supabase logs them in temporarily, and we redirect them
   // immediately to the "Update Password" screen.
   Supabase.instance.client.auth.onAuthStateChange.listen((data) {
     final AuthChangeEvent event = data.event;
@@ -96,7 +96,7 @@ Future<void> main() async {
     }
   });
   // ----------------------------------
-  
+
   runApp(const HandyConnect());
 }
 
