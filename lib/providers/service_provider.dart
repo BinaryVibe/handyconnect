@@ -1,188 +1,216 @@
+import 'package:supabase_flutter/supabase_flutter.dart';
+
 import '../models/service.dart';
 import '../models/service_details.dart';
 import '../utils/customer_with_service.dart';
 import '../utils/service_with_worker.dart';
 
 class CustomerServiceHandler {
-  // TODO: Initialize Supabase client
-  // final supabase = Supabase.instance.client;
+  final _supabase = Supabase.instance.client;
 
   Future<List<ServiceWithWorker>> fetchCustomerServices(
     String customerId,
   ) async {
     try {
-      // TODO: Replace with actual Supabase query
-      // final response = await supabase
-      //     .from('services')
-      //     .select('''
-      //       *,
-      //       service_details(*),
-      //       workers:worker_id(first_name, last_name, avatar_url, phone_number, profession)
-      //     ''')
-      //     .eq('customer_id', customerId)
-      //     .order('created_at', ascending: false);
+      final response = await _supabase
+          .from('services')
+          .select('''
+            *,
+            service_details(*),
+            workers:worker_id(
+              profession,
+              profile:profiles(
+                first_name,
+                last_name,
+                avatar_url,
+                phone_number
+              )
+            )
+          ''')
+          .eq('customer_id', customerId)
+          .order('created_at', ascending: false);
+      final result = (response).map((json) {
+        final serviceDetailsData = json.remove('service_details');
+        ServiceDetails serviceDetails = ServiceDetails.fromJson(
+          serviceDetailsData,
+        );
+        final workerData = json.remove('workers');
+        final String workerName =
+            '${workerData['profile']['first_name'] ?? ''} ${workerData['profile']['last_name'] ?? ''}';
+        final String workerPhone = workerData['profile']['phone_number'];
+        final String workerAvatar = workerData['profile']['avatar_url'];
 
-      await Future.delayed(const Duration(seconds: 1));
-      return _getMockCustomerServices();
+        final String workerProfession = workerData['profression'] ?? 'Unkown';
+        Service service = Service.fromJson(json);
+        return ServiceWithWorker(
+          service: service,
+          serviceDetails: serviceDetails,
+          workerName: workerName,
+          workerProfession: workerProfession,
+          workerAvatar: workerAvatar,
+          workerPhone: workerPhone,
+        );
+      }).toList();
+      return result;
     } catch (e) {
       throw Exception('Failed to fetch services: $e');
     }
   }
 
-  List<ServiceWithWorker> _getMockCustomerServices() {
-    final now = DateTime.now();
+  // List<ServiceWithWorker> _getMockCustomerServices() {
+  //   final now = DateTime.now();
 
-    return [
-      ServiceWithWorker(
-        service: Service(
-          id: 's1',
-          workerId: 'w1',
-          customerId: 'c123',
-          serviceTitle: 'Kitchen Sink Repair',
-          description:
-              'Kitchen sink is leaking and needs urgent repair. Water is dripping constantly.',
-          location: 'House #123, Street 5, Wah Cantt',
-          acceptedStatus: false,
-          createdAt: now.subtract(const Duration(hours: 2)),
-          updatedAt: now.subtract(const Duration(hours: 2)),
-        ),
-        workerName: 'John Smith',
-        workerAvatar: 'https://i.pravatar.cc/150?img=1',
-        workerPhone: '+92-300-1234567',
-        workerProfession: 'Plumber',
-      ),
-      ServiceWithWorker(
-        service: Service(
-          id: 's2',
-          workerId: 'w2',
-          customerId: 'c123',
-          serviceTitle: 'Ceiling Fan Installation',
-          description:
-              'Need to install ceiling fan in bedroom and fix faulty switches.',
-          location: 'House #123, Street 5, Wah Cantt',
-          acceptedStatus: true,
-          createdAt: now.subtract(const Duration(hours: 5)),
-          updatedAt: now.subtract(const Duration(hours: 3)),
-        ),
-        serviceDetails: ServiceDetails(
-          id: 'sd2',
-          serviceId: 's2',
-          price: 3000,
-          priceUnit: 'PKR',
-          bookingDate: now.subtract(const Duration(hours: 3)),
-          startDate: null,
-          expectedEnd: now.add(const Duration(days: 1)),
-          completedDate: null,
-          paidStatus: false,
-          createdAt: now.subtract(const Duration(hours: 3)),
-          updatedAt: now.subtract(const Duration(hours: 3)),
-        ),
-        workerName: 'Sarah Johnson',
-        workerAvatar: 'https://i.pravatar.cc/150?img=2',
-        workerPhone: '+92-301-9876543',
-        workerProfession: 'Electrician',
-      ),
-      ServiceWithWorker(
-        service: Service(
-          id: 's3',
-          workerId: 'w3',
-          customerId: 'c123',
-          serviceTitle: 'Bathroom Plumbing',
-          description: 'Fix bathroom drainage and install new faucet.',
-          location: 'House #123, Street 5, Wah Cantt',
-          acceptedStatus: true,
-          createdAt: now.subtract(const Duration(days: 1)),
-          updatedAt: now.subtract(const Duration(hours: 1)),
-        ),
-        serviceDetails: ServiceDetails(
-          id: 'sd3',
-          serviceId: 's3',
-          price: 2500,
-          priceUnit: 'PKR',
-          bookingDate: now.subtract(const Duration(hours: 6)),
-          startDate: now.subtract(const Duration(hours: 2)),
-          expectedEnd: now.add(const Duration(hours: 2)),
-          completedDate: null,
-          paidStatus: false,
-          createdAt: now.subtract(const Duration(hours: 6)),
-          updatedAt: now.subtract(const Duration(hours: 2)),
-        ),
-        workerName: 'Mike Davis',
-        workerAvatar: 'https://i.pravatar.cc/150?img=3',
-        workerPhone: '+92-333-4567890',
-        workerProfession: 'Plumber',
-      ),
-      ServiceWithWorker(
-        service: Service(
-          id: 's4',
-          workerId: 'w4',
-          customerId: 'c123',
-          serviceTitle: 'Wall Painting',
-          description: 'Paint living room walls with premium quality paint.',
-          location: 'House #123, Street 5, Wah Cantt',
-          acceptedStatus: true,
-          createdAt: now.subtract(const Duration(days: 3)),
-          updatedAt: now.subtract(const Duration(days: 1)),
-        ),
-        serviceDetails: ServiceDetails(
-          id: 'sd4',
-          serviceId: 's4',
-          price: 8000,
-          priceUnit: 'PKR',
-          bookingDate: now.subtract(const Duration(days: 2)),
-          startDate: now.subtract(const Duration(days: 2)),
-          expectedEnd: now.subtract(const Duration(days: 1)),
-          completedDate: now.subtract(const Duration(days: 1)),
-          paidStatus: true,
-          createdAt: now.subtract(const Duration(days: 2)),
-          updatedAt: now.subtract(const Duration(days: 1)),
-        ),
-        workerName: 'Emily Brown',
-        workerAvatar: 'https://i.pravatar.cc/150?img=4',
-        workerPhone: '+92-345-1122334',
-        workerProfession: 'Painter',
-      ),
-    ];
-  }
+  //   return [
+  //     ServiceWithWorker(
+  //       service: Service(
+  //         id: 's1',
+  //         workerId: 'w1',
+  //         customerId: 'c123',
+  //         serviceTitle: 'Kitchen Sink Repair',
+  //         description:
+  //             'Kitchen sink is leaking and needs urgent repair. Water is dripping constantly.',
+  //         location: 'House #123, Street 5, Wah Cantt',
+  //         acceptedStatus: false,
+  //         createdAt: now.subtract(const Duration(hours: 2)),
+  //         updatedAt: now.subtract(const Duration(hours: 2)),
+  //       ),
+  //       workerName: 'John Smith',
+  //       workerAvatar: 'https://i.pravatar.cc/150?img=1',
+  //       workerPhone: '+92-300-1234567',
+  //       workerProfession: 'Plumber',
+  //     ),
+  //     ServiceWithWorker(
+  //       service: Service(
+  //         id: 's2',
+  //         workerId: 'w2',
+  //         customerId: 'c123',
+  //         serviceTitle: 'Ceiling Fan Installation',
+  //         description:
+  //             'Need to install ceiling fan in bedroom and fix faulty switches.',
+  //         location: 'House #123, Street 5, Wah Cantt',
+  //         acceptedStatus: true,
+  //         createdAt: now.subtract(const Duration(hours: 5)),
+  //         updatedAt: now.subtract(const Duration(hours: 3)),
+  //       ),
+  //       serviceDetails: ServiceDetails(
+  //         id: 'sd2',
+  //         serviceId: 's2',
+  //         price: 3000,
+  //         priceUnit: 'PKR',
+  //         bookingDate: now.subtract(const Duration(hours: 3)),
+  //         startDate: null,
+  //         expectedEnd: now.add(const Duration(days: 1)),
+  //         completedDate: null,
+  //         paidStatus: false,
+  //         createdAt: now.subtract(const Duration(hours: 3)),
+  //         updatedAt: now.subtract(const Duration(hours: 3)),
+  //       ),
+  //       workerName: 'Sarah Johnson',
+  //       workerAvatar: 'https://i.pravatar.cc/150?img=2',
+  //       workerPhone: '+92-301-9876543',
+  //       workerProfession: 'Electrician',
+  //     ),
+  //     ServiceWithWorker(
+  //       service: Service(
+  //         id: 's3',
+  //         workerId: 'w3',
+  //         customerId: 'c123',
+  //         serviceTitle: 'Bathroom Plumbing',
+  //         description: 'Fix bathroom drainage and install new faucet.',
+  //         location: 'House #123, Street 5, Wah Cantt',
+  //         acceptedStatus: true,
+  //         createdAt: now.subtract(const Duration(days: 1)),
+  //         updatedAt: now.subtract(const Duration(hours: 1)),
+  //       ),
+  //       serviceDetails: ServiceDetails(
+  //         id: 'sd3',
+  //         serviceId: 's3',
+  //         price: 2500,
+  //         priceUnit: 'PKR',
+  //         bookingDate: now.subtract(const Duration(hours: 6)),
+  //         startDate: now.subtract(const Duration(hours: 2)),
+  //         expectedEnd: now.add(const Duration(hours: 2)),
+  //         completedDate: null,
+  //         paidStatus: false,
+  //         createdAt: now.subtract(const Duration(hours: 6)),
+  //         updatedAt: now.subtract(const Duration(hours: 2)),
+  //       ),
+  //       workerName: 'Mike Davis',
+  //       workerAvatar: 'https://i.pravatar.cc/150?img=3',
+  //       workerPhone: '+92-333-4567890',
+  //       workerProfession: 'Plumber',
+  //     ),
+  //     ServiceWithWorker(
+  //       service: Service(
+  //         id: 's4',
+  //         workerId: 'w4',
+  //         customerId: 'c123',
+  //         serviceTitle: 'Wall Painting',
+  //         description: 'Paint living room walls with premium quality paint.',
+  //         location: 'House #123, Street 5, Wah Cantt',
+  //         acceptedStatus: true,
+  //         createdAt: now.subtract(const Duration(days: 3)),
+  //         updatedAt: now.subtract(const Duration(days: 1)),
+  //       ),
+  //       serviceDetails: ServiceDetails(
+  //         id: 'sd4',
+  //         serviceId: 's4',
+  //         price: 8000,
+  //         priceUnit: 'PKR',
+  //         bookingDate: now.subtract(const Duration(days: 2)),
+  //         startDate: now.subtract(const Duration(days: 2)),
+  //         expectedEnd: now.subtract(const Duration(days: 1)),
+  //         completedDate: now.subtract(const Duration(days: 1)),
+  //         paidStatus: true,
+  //         createdAt: now.subtract(const Duration(days: 2)),
+  //         updatedAt: now.subtract(const Duration(days: 1)),
+  //       ),
+  //       workerName: 'Emily Brown',
+  //       workerAvatar: 'https://i.pravatar.cc/150?img=4',
+  //       workerPhone: '+92-345-1122334',
+  //       workerProfession: 'Painter',
+  //     ),
+  //   ];
+  // }
 }
 
 class WorkerServiceHandler {
-  // TODO: Initialize Supabase client
-  // final supabase = Supabase.instance.client;
+  final _supabase = Supabase.instance.client;
 
   // Fetch all services for a worker with customer details
   Future<List<ServiceWithCustomer>> fetchWorkerServices(String workerId) async {
     try {
-      // TODO: Replace with actual Supabase query with joins
-      // final response = await supabase
-      //     .from('services')
-      //     .select('''
-      //       *,
-      //       service_details(*),
-      //       customers:customer_id(first_name, last_name, avatar_url, phone_number)
-      //     ''')
-      //     .eq('worker_id', workerId)
-      //     .order('created_at', ascending: false);
-
-      // return (response as List).map((json) {
-      //   final service = Service.fromJson(json);
-      //   final serviceDetails = json['service_details'] != null
-      //       ? ServiceDetails.fromJson(json['service_details'])
-      //       : null;
-      //   final customer = json['customers'];
-      //
-      //   return ServiceWithCustomer(
-      //     service: service,
-      //     serviceDetails: serviceDetails,
-      //     customerName: '${customer['first_name']} ${customer['last_name']}',
-      //     customerAvatar: customer['avatar_url'],
-      //     customerPhone: customer['phone_number'],
-      //   );
-      // }).toList();
-
-      // Mock data for demonstration
-      await Future.delayed(const Duration(seconds: 1));
-      return _getMockServices();
+      final response = await _supabase
+          .from('services')
+          .select('''
+            *,
+            service_details(*),
+            customers:customer_id(
+              profile:profiles(
+                  first_name,
+                  last_name,
+                  avatar_url,
+                  phone_number
+              )
+            )
+          ''')
+          .eq('worker_id', workerId)
+          .order('created_at', ascending: false);
+      return (response as List).map((json) {
+        final service = Service.fromJson(json);
+        final serviceDetails = json['service_details'] != null
+            ? ServiceDetails.fromJson(json['service_details'])
+            : null;
+        final customer = json['customers'];
+      
+        return ServiceWithCustomer(
+          service: service,
+          serviceDetails: serviceDetails,
+          customerName: '${customer['profile']['first_name']} ${customer['profile']['last_name']}',
+          customerAvatar: customer['profile']['avatar_url'],
+          customerPhone: customer['profile']['phone_number'],
+        );
+      }).toList();
     } catch (e) {
       throw Exception('Failed to fetch services: $e');
     }
@@ -256,7 +284,6 @@ class WorkerServiceHandler {
           updatedAt: now.subtract(const Duration(hours: 12)),
         ),
         serviceDetails: ServiceDetails(
-          id: 'sd3',
           serviceId: 's3',
           price: 15000,
           priceUnit: 'PKR',
@@ -303,7 +330,6 @@ class WorkerServiceHandler {
           updatedAt: now.subtract(const Duration(hours: 2)),
         ),
         serviceDetails: ServiceDetails(
-          id: 'sd5',
           serviceId: 's5',
           price: 4500,
           priceUnit: 'PKR',
@@ -350,7 +376,6 @@ class WorkerServiceHandler {
           updatedAt: now.subtract(const Duration(days: 1)),
         ),
         serviceDetails: ServiceDetails(
-          id: 'sd7',
           serviceId: 's7',
           price: 3000,
           priceUnit: 'PKR',
