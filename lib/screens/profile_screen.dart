@@ -86,7 +86,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
           _lastNameController.text = profileData['last_name'] ?? '';
           _phoneController.text = profileData['phone_number'] ?? '';
           _email = profileData['email'] ?? '';
-          // Add timestamp to force image refresh
           _avatarUrl = profileData['avatar_url'] != null 
               ? '${profileData['avatar_url']}?t=${DateTime.now().millisecondsSinceEpoch}' 
               : null;
@@ -134,7 +133,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
     }
   }
 
-  // --- 2. IMAGE UPLOAD (UPDATED BUCKET NAME) ---
+  // --- 2. IMAGE UPLOAD ---
   Future<void> _uploadProfilePicture() async {
     try {
       final XFile? image = await _picker.pickImage(
@@ -150,7 +149,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
       final fileExt = image.name.split('.').last;
       final fileName = '$_userId/profile.$fileExt';
 
-      // CHANGE HERE: 'avatars' instead of 'profile_pics'
       await Supabase.instance.client.storage
           .from('avatars') 
           .uploadBinary(
@@ -162,7 +160,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
             ),
           );
 
-      // CHANGE HERE: 'avatars' instead of 'profile_pics'
       final imageUrl = Supabase.instance.client.storage
           .from('avatars')
           .getPublicUrl(fileName);
@@ -230,7 +227,81 @@ class _ProfileScreenState extends State<ProfileScreen> {
     }
   }
 
-  // --- Helper Methods ---
+  // --- 4. CHANGE PASSWORD LOGIC (Dialog) ---
+  void _showChangePasswordDialog() {
+    final passwordController = TextEditingController();
+
+    showDialog(
+      context: context,
+      // Renamed argument to 'dialogContext' to avoid confusing it with the screen's 'context'
+      builder: (dialogContext) {
+        return AlertDialog(
+          title: const Text("Change Password"),
+          content: TextField(
+            controller: passwordController,
+            obscureText: true,
+            decoration: const InputDecoration(
+              hintText: "Enter new password",
+              prefixIcon: Icon(Icons.lock_outline),
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(dialogContext), // Close dialog using its own context
+              child: const Text("Cancel"),
+            ),
+            ElevatedButton(
+              onPressed: () async {
+                final newPass = passwordController.text.trim();
+                if (newPass.length < 6) {
+                  // We can use dialogContext here because the dialog is still open
+                  ScaffoldMessenger.of(dialogContext).showSnackBar(
+                    const SnackBar(content: Text('Password must be at least 6 chars')),
+                  );
+                  return;
+                }
+
+                // 1. Close the dialog immediately
+                Navigator.pop(dialogContext);
+
+                // 2. Show loading on the main screen
+                setState(() => _isSaving = true);
+
+                try {
+                  // 3. Perform the update
+                  await Supabase.instance.client.auth.updateUser(
+                    UserAttributes(password: newPass),
+                  );
+
+                  // 4. Show Success SnackBar using the Main Screen's 'context'
+                  if (mounted) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(
+                        content: Text('Password changed successfully!'),
+                        backgroundColor: Colors.green,
+                        duration: Duration(seconds: 3),
+                      ),
+                    );
+                  }
+                } catch (e) {
+                  if (mounted) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(content: Text('Error: $e'), backgroundColor: Colors.red),
+                    );
+                  }
+                } finally {
+                  if (mounted) setState(() => _isSaving = false);
+                }
+              },
+              style: ElevatedButton.styleFrom(backgroundColor: kPrimaryColor),
+              child: const Text("Update", style: TextStyle(color: Colors.white)),
+            ),
+          ],
+        );
+      },
+    );
+  }
+  // --- Worker Helper Methods ---
   void _addSkill() {
     final newSkill = _skillController.text.trim();
     if (newSkill.isNotEmpty && !_skills.contains(newSkill)) {
@@ -286,7 +357,12 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   ],
 
                   const SizedBox(height: 30),
+                  
+                  // --- Buttons Section ---
                   _buildSaveButton(),
+                  const SizedBox(height: 16),
+                  _buildChangePasswordButton(), // NEW BUTTON HERE
+                  
                   const SizedBox(height: 40),
                 ],
               ),
@@ -296,6 +372,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
       ),
     );
   }
+
+  // --- WIDGETS ---
 
   Widget _buildHeader() {
     return Container(
@@ -430,6 +508,22 @@ class _ProfileScreenState extends State<ProfileScreen> {
         child: _isSaving
             ? const CircularProgressIndicator(color: Colors.white)
             : const Text("Save Changes", style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.white)),
+      ),
+    );
+  }
+
+  // --- NEW: Change Password Button Widget ---
+  Widget _buildChangePasswordButton() {
+    return SizedBox(
+      width: double.infinity,
+      height: 55,
+      child: OutlinedButton(
+        onPressed: _isSaving ? null : _showChangePasswordDialog,
+        style: OutlinedButton.styleFrom(
+          side: const BorderSide(color: kPrimaryColor, width: 2),
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+        ),
+        child: const Text("Change Password", style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: kPrimaryColor)),
       ),
     );
   }
