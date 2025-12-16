@@ -26,13 +26,13 @@ class Service {
 
   factory Service.fromJson(Map<String, dynamic> json) {
     return Service(
-      id: json['id'],
-      workerId: json['worker_id'],
-      customerId: json['customer_id'],
-      serviceTitle: json['service_title'],
-      description: json['description'],
-      location: json['location'],
-      acceptedStatus: json['accepted_status'] ?? false,
+      id: json['id'] as String,
+      workerId: json['worker_id'] as String,
+      customerId: json['customer_id'] as String,
+      serviceTitle: json['service_title'] as String,
+      description: json['description'] as String,
+      location: json['location'] as String,
+      acceptedStatus: (json['accepted_status'] ?? false) as bool,
       createdAt: DateTime.parse(json['created_at']),
       updatedAt: DateTime.parse(json['updated_at']),
     );
