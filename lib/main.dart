@@ -22,7 +22,7 @@ import 'models/worker.dart';
 const Color kPrimaryColor = Color.fromARGB(255, 74, 46, 30);
 
 final _router = GoRouter(
-  initialLocation: '/',
+  initialLocation: '/https://afgvpnvqxzmosfogcysc.supabase.co/auth/v1/verify?token=pkce_dcbc641d7ce100873f4e25ca3d28cc61d4cbcdff80e9cb2c3d1dc9a6&type=recovery&redirect_to=http://localhost:56994/',
   routes: [
     GoRoute(path: '/', builder: (context, state) => const HomeScreen()),
     GoRoute(path: '/login', builder: (context, state) => const LoginScreen()),
