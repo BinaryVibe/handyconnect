@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:go_router/go_router.dart';
 
-// --- Theme Constants (Matching your Dashboard) ---
+// --- Theme Constants ---
 const Color kPrimaryColor = Color.fromARGB(255, 74, 46, 30);
 const Color kFieldColor = Color(0xFFE9DFD8);
 const Color kBackgroundColor = Color(0xFFF7F2EF);
@@ -26,7 +26,7 @@ class _WorkerProfileScreenState extends State<WorkerProfileScreen> {
   final _lastNameController = TextEditingController();
   final _phoneController = TextEditingController();
   final _professionController = TextEditingController();
-  final _skillController = TextEditingController(); // Input for adding new skills
+  final _skillController = TextEditingController(); 
 
   // --- State Variables ---
   String? _email;
@@ -50,19 +50,17 @@ class _WorkerProfileScreenState extends State<WorkerProfileScreen> {
     super.dispose();
   }
 
-  // --- 1. FETCH DATA FROM SUPABASE ---
+  // --- 1. FETCH DATA ---
   Future<void> _loadProfileData() async {
     try {
       final client = Supabase.instance.client;
 
-      // 1. Fetch Personal Info from 'profiles' table
       final profileData = await client
           .from('profiles')
           .select()
           .eq('id', widget.workerId)
           .single();
 
-      // 2. Fetch Professional Info from 'workers' table
       final workerData = await client
           .from('workers')
           .select()
@@ -70,18 +68,15 @@ class _WorkerProfileScreenState extends State<WorkerProfileScreen> {
           .single();
 
       setState(() {
-        // Map Profile Data
         _firstNameController.text = profileData['first_name'] ?? '';
         _lastNameController.text = profileData['last_name'] ?? '';
         _phoneController.text = profileData['phone_number'] ?? '';
         _email = profileData['email'] ?? '';
         _avatarUrl = profileData['avatar_url'];
 
-        // Map Worker Data
         _professionController.text = workerData['profession'] ?? '';
         _isAvailable = workerData['availability'] ?? false;
 
-        // Map Skills (Safe handling of JSON List)
         if (workerData['skills'] != null) {
           _skills = List<String>.from(workerData['skills']);
         }
@@ -98,14 +93,13 @@ class _WorkerProfileScreenState extends State<WorkerProfileScreen> {
     }
   }
 
-  // --- 2. UPDATE DATA IN SUPABASE ---
+  // --- 2. UPDATE DATA ---
   Future<void> _saveChanges() async {
     setState(() => _isSaving = true);
 
     try {
       final client = Supabase.instance.client;
 
-      // 1. Update 'profiles' table
       await client.from('profiles').update({
         'first_name': _firstNameController.text.trim(),
         'last_name': _lastNameController.text.trim(),
@@ -113,11 +107,10 @@ class _WorkerProfileScreenState extends State<WorkerProfileScreen> {
         'updated_at': DateTime.now().toIso8601String(),
       }).eq('id', widget.workerId);
 
-      // 2. Update 'workers' table
       await client.from('workers').update({
         'profession': _professionController.text.trim(),
         'availability': _isAvailable,
-        'skills': _skills, // Sends the Dart List directly as JSON/Array
+        'skills': _skills, 
       }).eq('id', widget.workerId);
 
       if (mounted) {
@@ -142,7 +135,7 @@ class _WorkerProfileScreenState extends State<WorkerProfileScreen> {
     }
   }
 
-  // --- Logic to Add/Remove Skills ---
+  // --- Helpers ---
   void _addSkill() {
     final newSkill = _skillController.text.trim();
     if (newSkill.isNotEmpty && !_skills.contains(newSkill)) {
@@ -166,43 +159,48 @@ class _WorkerProfileScreenState extends State<WorkerProfileScreen> {
       return const Center(child: CircularProgressIndicator(color: kPrimaryColor));
     }
 
-    // LayoutBuilder makes it responsive (Desktop vs Mobile)
-    return LayoutBuilder(
-      builder: (context, constraints) {
-        // If width < 800, we consider it "Mobile" layout
-        final isMobile = constraints.maxWidth < 800;
+    // UPDATED: Center + ConstrainedBox creates the margins on desktop
+    return Center(
+      child: ConstrainedBox(
+        constraints: const BoxConstraints(maxWidth: 1000), // Limits width on big screens
+        child: LayoutBuilder(
+          builder: (context, constraints) {
+            // Determine layout based on the constrained width
+            final isMobile = constraints.maxWidth < 800;
 
-        return SingleChildScrollView(
-          padding: const EdgeInsets.all(16.0),
-          child: Column(
-            children: [
-              _buildHeader(),
-              const SizedBox(height: 24),
+            return SingleChildScrollView(
+              padding: const EdgeInsets.all(16.0),
+              child: Column(
+                children: [
+                  _buildHeader(),
+                  const SizedBox(height: 24),
 
-              if (isMobile) ...[
-                // --- Mobile: Stack Vertical ---
-                _buildPersonalInfoCard(),
-                const SizedBox(height: 16),
-                _buildProfessionalInfoCard(),
-              ] else ...[
-                // --- Desktop: Side by Side ---
-                Row(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Expanded(child: _buildPersonalInfoCard()),
-                    const SizedBox(width: 24),
-                    Expanded(child: _buildProfessionalInfoCard()),
+                  if (isMobile) ...[
+                    // --- Mobile: Stack Vertical ---
+                    _buildPersonalInfoCard(),
+                    const SizedBox(height: 16),
+                    _buildProfessionalInfoCard(),
+                  ] else ...[
+                    // --- Desktop: Side by Side ---
+                    Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Expanded(child: _buildPersonalInfoCard()),
+                        const SizedBox(width: 24),
+                        Expanded(child: _buildProfessionalInfoCard()),
+                      ],
+                    ),
                   ],
-                ),
-              ],
 
-              const SizedBox(height: 30),
-              _buildSaveButton(),
-              const SizedBox(height: 40), // Bottom padding
-            ],
-          ),
-        );
-      },
+                  const SizedBox(height: 30),
+                  _buildSaveButton(),
+                  const SizedBox(height: 40), 
+                ],
+              ),
+            );
+          },
+        ),
+      ),
     );
   }
 
@@ -213,7 +211,7 @@ class _WorkerProfileScreenState extends State<WorkerProfileScreen> {
       width: double.infinity,
       padding: const EdgeInsets.all(24),
       decoration: BoxDecoration(
-        color: const Color(0xFFEFE5D5), // Light beige header
+        color: const Color(0xFFEFE5D5),
         borderRadius: BorderRadius.circular(16),
       ),
       child: Column(
@@ -256,7 +254,6 @@ class _WorkerProfileScreenState extends State<WorkerProfileScreen> {
           const SizedBox(height: 16),
           _buildTextField("Last Name", _lastNameController),
           const SizedBox(height: 16),
-          // Email is read-only
           _buildTextField("Email", TextEditingController(text: _email),
               isReadOnly: true),
           const SizedBox(height: 16),
@@ -276,13 +273,11 @@ class _WorkerProfileScreenState extends State<WorkerProfileScreen> {
           _buildTextField("Profession", _professionController),
           const SizedBox(height: 24),
 
-          // Skills Label
           const Text("Skills",
               style: TextStyle(
                   fontWeight: FontWeight.bold, color: kPrimaryColor)),
           const SizedBox(height: 10),
 
-          // Skills Chips
           Wrap(
             spacing: 8,
             runSpacing: 8,
@@ -297,7 +292,6 @@ class _WorkerProfileScreenState extends State<WorkerProfileScreen> {
           ),
           const SizedBox(height: 10),
 
-          // Add Skill Input
           Row(
             children: [
               Expanded(
@@ -331,7 +325,6 @@ class _WorkerProfileScreenState extends State<WorkerProfileScreen> {
           const SizedBox(height: 24),
           const Divider(),
 
-          // Availability Toggle
           SwitchListTile(
             contentPadding: EdgeInsets.zero,
             title: const Text(
@@ -379,8 +372,6 @@ class _WorkerProfileScreenState extends State<WorkerProfileScreen> {
       ),
     );
   }
-
-  // --- Helper Widgets ---
 
   Widget _buildCard({required String title, required Widget child}) {
     return Container(
