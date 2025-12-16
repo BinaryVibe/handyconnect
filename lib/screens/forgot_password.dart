@@ -28,7 +28,7 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
       await Supabase.instance.client.auth.resetPasswordForEmail(
         email,
         // Optional: Ensure this matches your deep link scheme if configured
-        // redirectTo: 'io.supabase.flutterquickstart://login-callback/',
+        redirectTo: 'http://update-password/',
       );
 
       if (!mounted) return;
