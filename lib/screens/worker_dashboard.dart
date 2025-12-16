@@ -25,9 +25,9 @@ class WorkerDashboard extends StatefulWidget {
 }
 
 class _WorkerDashboardState extends State<WorkerDashboard> {
-  final WorkerServiceHandler _serviceRequestService = WorkerServiceHandler();
-  final WorkerSupabaseService _workerSupabaseService = WorkerSupabaseService();
-  late final String? _workerId = _workerSupabaseService.userId;
+  final WorkerServiceHandler _workerServiceHandler = WorkerServiceHandler();
+  final WorkerHandler _workerHandler = WorkerHandler();
+  late final String? _workerId = _workerHandler.userId;
   List<ServiceWithCustomer> _services = [];
   List<ServiceWithCustomer> _filteredServices = [];
   bool _isLoading = true;
@@ -45,13 +45,14 @@ class _WorkerDashboardState extends State<WorkerDashboard> {
   Future<void> _loadServices() async {
     setState(() => _isLoading = true);
     try {
-      final services = await _serviceRequestService.fetchWorkerServices(_workerId!);
+      final services = await _workerServiceHandler.fetchWorkerServices(_workerId!);
       setState(() {
         _services = services;
         _filteredServices = services;
         _isLoading = false;
       });
     } catch (e) {
+      print(e.toString());
       setState(() => _isLoading = false);
       _showError('Failed to load services');
     }
@@ -97,7 +98,7 @@ class _WorkerDashboardState extends State<WorkerDashboard> {
         page = Placeholder();
         break;
       case 3:
-        page = ProfileScreen();
+        page = const ProfileScreen();
         break;
       default:
         throw UnimplementedError("No widger for $_selectedIndex");
