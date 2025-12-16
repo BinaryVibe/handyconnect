@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:go_router/go_router.dart';
@@ -24,11 +25,15 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
     setState(() => _isLoading = true);
 
     try {
+      final redirectTo = kIsWeb
+          ? 'http://localhost:3000/update-password'
+          : 'handyconnect://update-password';
+
       // 1. Send the magic link to the user's email
       await Supabase.instance.client.auth.resetPasswordForEmail(
         email,
         // Optional: Ensure this matches your deep link scheme if configured
-        redirectTo: 'http://update-password/',
+        redirectTo: redirectTo,
       );
 
       if (!mounted) return;
@@ -39,10 +44,9 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
           backgroundColor: Colors.green,
         ),
       );
-      
+
       // Go back to login
       context.pop();
-
     } catch (error) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -72,7 +76,11 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
           children: [
             const Text(
               "Forgot Password?",
-              style: TextStyle(fontSize: 28, fontWeight: FontWeight.bold, color: kPrimaryColor),
+              style: TextStyle(
+                fontSize: 28,
+                fontWeight: FontWeight.bold,
+                color: kPrimaryColor,
+              ),
             ),
             const SizedBox(height: 10),
             const Text("Enter your email to receive a reset link."),
@@ -83,7 +91,10 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
                 hintText: 'Email Address',
                 filled: true,
                 fillColor: kFieldColor,
-                border: OutlineInputBorder(borderRadius: BorderRadius.circular(30), borderSide: BorderSide.none),
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(30),
+                  borderSide: BorderSide.none,
+                ),
               ),
             ),
             const SizedBox(height: 20),
@@ -93,9 +104,12 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
               child: ElevatedButton(
                 onPressed: _isLoading ? null : _handleReset,
                 style: ElevatedButton.styleFrom(backgroundColor: kPrimaryColor),
-                child: _isLoading 
-                    ? const CircularProgressIndicator(color: Colors.white) 
-                    : const Text('Send Reset Link', style: TextStyle(color: Colors.white)),
+                child: _isLoading
+                    ? const CircularProgressIndicator(color: Colors.white)
+                    : const Text(
+                        'Send Reset Link',
+                        style: TextStyle(color: Colors.white),
+                      ),
               ),
             ),
           ],
