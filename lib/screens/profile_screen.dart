@@ -9,6 +9,7 @@ const Color kPrimaryColor = Color.fromARGB(255, 74, 46, 30);
 const Color kFieldColor = Color(0xFFE9DFD8);
 const Color kBackgroundColor = Color(0xFFF7F2EF);
 const Color tagsBgColor = Color(0xFFBFC882);
+const Color kErrorColor = Color(0xFFD32F2F); 
 
 class ProfileScreen extends StatefulWidget {
   const ProfileScreen({super.key});
@@ -86,7 +87,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
           _lastNameController.text = profileData['last_name'] ?? '';
           _phoneController.text = profileData['phone_number'] ?? '';
           _email = profileData['email'] ?? '';
-          // Add timestamp to force image refresh
           _avatarUrl = profileData['avatar_url'] != null 
               ? '${profileData['avatar_url']}?t=${DateTime.now().millisecondsSinceEpoch}' 
               : null;
@@ -228,7 +228,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
     }
   }
 
-  // --- 4. CHANGE PASSWORD LOGIC (Dialog) ---
+  // --- 4. CHANGE PASSWORD LOGIC ---
   void _showChangePasswordDialog() {
     final passwordController = TextEditingController();
 
@@ -259,29 +259,21 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   );
                   return;
                 }
-
-                Navigator.pop(dialogContext); // Close dialog
-                setState(() => _isSaving = true); // Start Loading
+                Navigator.pop(dialogContext);
+                setState(() => _isSaving = true);
 
                 try {
                   await Supabase.instance.client.auth.updateUser(
                     UserAttributes(password: newPass),
                   );
-
                   if (mounted) {
                     ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(
-                        content: Text('Password changed successfully!'),
-                        backgroundColor: Colors.green,
-                        duration: Duration(seconds: 3),
-                      ),
+                      const SnackBar(content: Text('Password changed successfully!'), backgroundColor: Colors.green),
                     );
                   }
                 } catch (e) {
                   if (mounted) {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(content: Text('Error: $e'), backgroundColor: Colors.red),
-                    );
+                    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Error: $e'), backgroundColor: Colors.red));
                   }
                 } finally {
                   if (mounted) setState(() => _isSaving = false);
@@ -296,7 +288,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
     );
   }
 
-  // --- 5. CHANGE EMAIL LOGIC (Dialog) ---
+  // --- 5. CHANGE EMAIL LOGIC ---
   void _showChangeEmailDialog() {
     final emailController = TextEditingController();
 
@@ -327,29 +319,21 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   );
                   return;
                 }
-
-                Navigator.pop(dialogContext); // Close dialog
-                setState(() => _isSaving = true); // Start Loading
+                Navigator.pop(dialogContext);
+                setState(() => _isSaving = true);
 
                 try {
                   await Supabase.instance.client.auth.updateUser(
                     UserAttributes(email: newEmail),
                   );
-
                   if (mounted) {
                     ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(
-                        content: Text('Confirmation link sent to $newEmail! Please verify.'),
-                        backgroundColor: Colors.blue,
-                        duration: const Duration(seconds: 5),
-                      ),
+                      SnackBar(content: Text('Confirmation link sent to $newEmail!'), backgroundColor: Colors.blue),
                     );
                   }
                 } catch (e) {
                   if (mounted) {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(content: Text('Error: $e'), backgroundColor: Colors.red),
-                    );
+                    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Error: $e'), backgroundColor: Colors.red));
                   }
                 } finally {
                   if (mounted) setState(() => _isSaving = false);
@@ -357,6 +341,81 @@ class _ProfileScreenState extends State<ProfileScreen> {
               },
               style: ElevatedButton.styleFrom(backgroundColor: kPrimaryColor),
               child: const Text("Update", style: TextStyle(color: Colors.white)),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  // --- 6. DELETE PROFILE LOGIC ---
+  void _showDeleteProfileDialog() {
+    final confirmController = TextEditingController();
+
+    showDialog(
+      context: context,
+      builder: (dialogContext) {
+        return AlertDialog(
+          title: const Text("Delete Profile", style: TextStyle(color: kErrorColor)),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Text("Are you sure you want to delete your profile? This action cannot be undone."),
+              const SizedBox(height: 16),
+              const Text("Type DELETE below to confirm:", style: TextStyle(fontWeight: FontWeight.bold)),
+              const SizedBox(height: 8),
+              TextField(
+                controller: confirmController,
+                decoration: const InputDecoration(
+                  hintText: "DELETE",
+                  border: OutlineInputBorder(),
+                ),
+              ),
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(dialogContext),
+              child: const Text("Cancel"),
+            ),
+            ElevatedButton(
+              onPressed: () async {
+                if (confirmController.text != "DELETE") {
+                  ScaffoldMessenger.of(dialogContext).showSnackBar(
+                    const SnackBar(content: Text('Please type DELETE correctly to confirm.')),
+                  );
+                  return;
+                }
+                
+                Navigator.pop(dialogContext); // Close dialog
+                setState(() => _isLoading = true); // Show full screen loading
+
+                try {
+                  await Supabase.instance.client
+                      .from('profiles')
+                      .delete()
+                      .eq('id', _userId!);
+
+                  await Supabase.instance.client.auth.signOut();
+
+                  if (mounted) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(content: Text('Profile deleted successfully.'), backgroundColor: Colors.grey),
+                    );
+                    context.go('/login');
+                  }
+                } catch (e) {
+                  if (mounted) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(content: Text('Error deleting profile: $e'), backgroundColor: Colors.red),
+                    );
+                    setState(() => _isLoading = false);
+                  }
+                }
+              },
+              style: ElevatedButton.styleFrom(backgroundColor: kErrorColor),
+              child: const Text("Delete", style: TextStyle(color: Colors.white)),
             ),
           ],
         );
@@ -419,14 +478,30 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     _buildPersonalInfoCard(),
                   ],
 
-                  const SizedBox(height: 30),
+                  const SizedBox(height: 40),
                   
-                  // --- Buttons Section ---
+                  // --- NEW BUTTON LAYOUT ---
+                  
+                  // 1. Primary Action: Save Changes
                   _buildSaveButton(),
-                  const SizedBox(height: 16),
-                  _buildChangePasswordButton(), 
-                  const SizedBox(height: 12),
-                  _buildChangeEmailButton(), // NEW BUTTON
+                  
+                  const SizedBox(height: 20),
+                  
+                  // 2. Secondary Actions: Change Password & Email (Side by Side)
+                  Row(
+                    children: [
+                      Expanded(child: _buildChangePasswordButton()),
+                      const SizedBox(width: 16),
+                      Expanded(child: _buildChangeEmailButton()),
+                    ],
+                  ),
+                  
+                  const SizedBox(height: 40),
+                  const Divider(),
+                  const SizedBox(height: 10),
+
+                  // 3. Danger Action: Delete Profile
+                  _buildDeleteProfileButton(),
                   
                   const SizedBox(height: 40),
                 ],
@@ -560,50 +635,75 @@ class _ProfileScreenState extends State<ProfileScreen> {
     );
   }
 
+  // --- BUTTON BUILDERS (UPDATED STYLES) ---
+
   Widget _buildSaveButton() {
     return SizedBox(
       width: double.infinity,
       height: 55,
-      child: ElevatedButton(
+      child: ElevatedButton.icon(
         onPressed: _isSaving ? null : _saveChanges,
         style: ElevatedButton.styleFrom(
           backgroundColor: kPrimaryColor,
           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+          elevation: 4,
         ),
-        child: _isSaving
-            ? const CircularProgressIndicator(color: Colors.white)
-            : const Text("Save Changes", style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.white)),
+        icon: _isSaving 
+          ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2))
+          : const Icon(Icons.save, color: Colors.white),
+        label: Text(
+          _isSaving ? "Saving..." : "Save Changes", 
+          style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.white)
+        ),
       ),
     );
   }
 
   Widget _buildChangePasswordButton() {
     return SizedBox(
-      width: double.infinity,
-      height: 55,
-      child: OutlinedButton(
+      height: 50,
+      child: OutlinedButton.icon(
         onPressed: _isSaving ? null : _showChangePasswordDialog,
         style: OutlinedButton.styleFrom(
           side: const BorderSide(color: kPrimaryColor, width: 2),
           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+          padding: EdgeInsets.zero, // Compact for small screens
         ),
-        child: const Text("Change Password", style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: kPrimaryColor)),
+        icon: const Icon(Icons.lock_outline, color: kPrimaryColor, size: 20),
+        label: const Text("Change Password", style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: kPrimaryColor)),
       ),
     );
   }
 
-  // --- NEW: Change Email Button ---
   Widget _buildChangeEmailButton() {
     return SizedBox(
-      width: double.infinity,
-      height: 55,
-      child: OutlinedButton(
+      height: 50,
+      child: OutlinedButton.icon(
         onPressed: _isSaving ? null : _showChangeEmailDialog,
         style: OutlinedButton.styleFrom(
           side: const BorderSide(color: kPrimaryColor, width: 2),
           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+          padding: EdgeInsets.zero,
         ),
-        child: const Text("Change Email", style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: kPrimaryColor)),
+        icon: const Icon(Icons.email_outlined, color: kPrimaryColor, size: 20),
+        label: const Text("Change Email", style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: kPrimaryColor)),
+      ),
+    );
+  }
+
+  Widget _buildDeleteProfileButton() {
+    return Center(
+      child: TextButton.icon(
+        onPressed: _isSaving ? null : _showDeleteProfileDialog,
+        icon: const Icon(Icons.delete_forever, color: kErrorColor),
+        label: const Text(
+          "Delete Profile", 
+          style: TextStyle(
+            fontSize: 16, 
+            fontWeight: FontWeight.bold, 
+            color: kErrorColor,
+          ),
+        ),
       ),
     );
   }
