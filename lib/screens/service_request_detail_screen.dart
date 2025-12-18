@@ -10,6 +10,7 @@ const Color kBackgroundColor = Color(0xFFF7F2EF);
 const Color kAcceptColor = Color(0xFF4CAF50);
 const Color kDeclineColor = Color(0xFFD32F2F);
 const Color kCompleteColor = Color(0xFF2196F3);
+const Color kPendingPaymentColor = Color(0xFFFF9800); // Orange for Awaiting Payment
 
 class ServiceRequestDetailsScreen extends StatefulWidget {
   final String serviceId;
@@ -24,7 +25,7 @@ class _ServiceRequestDetailsScreenState extends State<ServiceRequestDetailsScree
   final ServiceRequestHandler _requestHandler = ServiceRequestHandler();
 
   bool _isLoading = true;
-  bool _showInputFields = false; // Only used for initial acceptance
+  bool _showInputFields = false;
   
   Map<String, dynamic>? _serviceData;
   Map<String, dynamic>? _customerProfile;
@@ -66,7 +67,6 @@ class _ServiceRequestDetailsScreenState extends State<ServiceRequestDetailsScree
     }
   }
 
-  // --- Date Picker Logic ---
   Future<DateTime?> _pickDate() async {
     return await showDatePicker(
       context: context,
@@ -84,13 +84,12 @@ class _ServiceRequestDetailsScreenState extends State<ServiceRequestDetailsScree
     );
   }
 
-  // --- Update Existing Job (Time or Completion) ---
   Future<void> _updateJobStatus({bool markCompleted = false, bool updateTime = false}) async {
     DateTime? newDate;
     
     if (updateTime) {
       newDate = await _pickDate();
-      if (newDate == null) return; // User cancelled
+      if (newDate == null) return; 
     }
 
     if (markCompleted) {
@@ -98,7 +97,7 @@ class _ServiceRequestDetailsScreenState extends State<ServiceRequestDetailsScree
         context: context,
         builder: (ctx) => AlertDialog(
           title: const Text("Complete Job?"),
-          content: const Text("Are you sure you want to mark this work as completed?"),
+          content: const Text("Are you sure you want to mark this work as completed? The status will change to 'Awaiting Payment'."),
           actions: [
             TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text("Cancel")),
             TextButton(onPressed: () => Navigator.pop(ctx, true), child: const Text("Yes, Complete")),
@@ -117,13 +116,12 @@ class _ServiceRequestDetailsScreenState extends State<ServiceRequestDetailsScree
         markAsCompleted: markCompleted,
       );
 
-      // Refresh data to show new status
       await _fetchData(); 
 
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text(markCompleted ? 'Job Marked as Completed!' : 'Time Updated Successfully'),
+            content: Text(markCompleted ? 'Job Completed. Awaiting Payment.' : 'Time Updated Successfully'),
             backgroundColor: kAcceptColor,
           ),
         );
@@ -136,7 +134,6 @@ class _ServiceRequestDetailsScreenState extends State<ServiceRequestDetailsScree
     }
   }
 
-  // --- Initial Acceptance Logic ---
   Future<void> _submitInitialAcceptance() async {
     if (_priceController.text.isEmpty || _estimatedEndDate == null) {
       ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Please enter Price and Estimated End Date")));
@@ -149,7 +146,7 @@ class _ServiceRequestDetailsScreenState extends State<ServiceRequestDetailsScree
         price: double.parse(_priceController.text.trim()),
         estimatedEndDate: _estimatedEndDate!.toIso8601String(),
       );
-      await _fetchData(); // Refresh UI to show "In Progress" state
+      await _fetchData(); 
     } catch (e) {
       if (mounted) {
         setState(() => _isLoading = false);
@@ -159,7 +156,6 @@ class _ServiceRequestDetailsScreenState extends State<ServiceRequestDetailsScree
   }
 
   Future<void> _handleDecline() async {
-    // ... (Keep existing decline logic)
     final confirm = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
@@ -194,14 +190,15 @@ class _ServiceRequestDetailsScreenState extends State<ServiceRequestDetailsScree
       return const Scaffold(body: Center(child: Text("Service not found")));
     }
 
-    // Data Extraction
     final s = _serviceData!;
     final p = _customerProfile!;
     final details = _serviceDetails;
     
+    // --- STATUS LOGIC ---
     final isAccepted = s['accepted_status'] == true;
-    final isCompleted = details != null && details['completed_date'] != null;
-    
+    final isWorkFinished = details != null && details['completed_date'] != null;
+    final isPaid = details != null && details['paid_status'] == true;
+
     // Display Strings
     final expectedEnd = details?['expected_end'] != null 
         ? DateFormat('MMM d, y').format(DateTime.parse(details!['expected_end'])) 
@@ -223,7 +220,6 @@ class _ServiceRequestDetailsScreenState extends State<ServiceRequestDetailsScree
             child: Column(
               children: [
                 const SizedBox(height: 40),
-                // Customer Avatar
                 Center(
                   child: Container(
                     padding: const EdgeInsets.all(4),
@@ -240,23 +236,14 @@ class _ServiceRequestDetailsScreenState extends State<ServiceRequestDetailsScree
                 Text("${p['first_name']} ${p['last_name']}", style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: kPrimaryColor)),
                 const SizedBox(height: 30),
 
-                // --- Status Banner ---
-                if (isCompleted)
-                  Container(
-                    width: double.infinity,
-                    padding: const EdgeInsets.symmetric(vertical: 12),
-                    margin: const EdgeInsets.only(bottom: 20),
-                    decoration: BoxDecoration(color: kAcceptColor.withOpacity(0.1), borderRadius: BorderRadius.circular(12), border: Border.all(color: kAcceptColor)),
-                    child: const Text("Job Completed", textAlign: TextAlign.center, style: TextStyle(color: kAcceptColor, fontWeight: FontWeight.bold, fontSize: 18)),
-                  )
+                // --- STATUS BANNER LOGIC ---
+                if (isWorkFinished)
+                  if (isPaid)
+                    _buildStatusBanner("Job Completed & Paid", kAcceptColor)
+                  else
+                    _buildStatusBanner("Awaiting Payment", kPendingPaymentColor)
                 else if (isAccepted)
-                  Container(
-                    width: double.infinity,
-                    padding: const EdgeInsets.symmetric(vertical: 12),
-                    margin: const EdgeInsets.only(bottom: 20),
-                    decoration: BoxDecoration(color: kCompleteColor.withOpacity(0.1), borderRadius: BorderRadius.circular(12), border: Border.all(color: kCompleteColor)),
-                    child: const Text("Work In Progress", textAlign: TextAlign.center, style: TextStyle(color: kCompleteColor, fontWeight: FontWeight.bold, fontSize: 18)),
-                  ),
+                  _buildStatusBanner("Work In Progress", kCompleteColor),
 
                 // --- Details ---
                 _buildInfoCard(
@@ -278,13 +265,13 @@ class _ServiceRequestDetailsScreenState extends State<ServiceRequestDetailsScree
                 ),
                 const SizedBox(height: 40),
 
-                // --- ACTION BUTTONS LOGIC ---
+                // --- ACTION BUTTONS ---
                 
-                // Case 1: Job Completed (No Actions)
-                if (isCompleted)
+                // Case 1: Work Finished (Paid or Unpaid) -> No Worker Actions allowed
+                if (isWorkFinished)
                   const SizedBox() 
 
-                // Case 2: Accepted & In Progress (Update Actions)
+                // Case 2: Accepted & In Progress -> Update Actions
                 else if (isAccepted)
                   Column(
                     children: [
@@ -316,7 +303,7 @@ class _ServiceRequestDetailsScreenState extends State<ServiceRequestDetailsScree
                     ],
                   )
 
-                // Case 3: New Request (Accept/Decline)
+                // Case 3: New Request -> Accept/Decline
                 else if (!_showInputFields)
                   Row(
                     children: [
@@ -344,7 +331,7 @@ class _ServiceRequestDetailsScreenState extends State<ServiceRequestDetailsScree
                     ],
                   )
                 
-                // Case 4: Filling Details for Acceptance
+                // Case 4: Acceptance Form
                 else 
                   _buildAcceptanceForm(),
 
@@ -353,6 +340,26 @@ class _ServiceRequestDetailsScreenState extends State<ServiceRequestDetailsScree
             ),
           ),
         ],
+      ),
+    );
+  }
+
+  // --- Helpers ---
+
+  Widget _buildStatusBanner(String text, Color color) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.symmetric(vertical: 12),
+      margin: const EdgeInsets.only(bottom: 20),
+      decoration: BoxDecoration(
+        color: color.withOpacity(0.1),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: color),
+      ),
+      child: Text(
+        text,
+        textAlign: TextAlign.center,
+        style: TextStyle(color: color, fontWeight: FontWeight.bold, fontSize: 18),
       ),
     );
   }
