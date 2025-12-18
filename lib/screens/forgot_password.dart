@@ -26,7 +26,7 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
 
     try {
       final redirectTo = kIsWeb
-          ? 'http://localhost:3000/update-password'
+          ? 'http://127.0.0.1:3000/update-password'
           : 'handyconnect://update-password';
 
       // 1. Send the magic link to the user's email
