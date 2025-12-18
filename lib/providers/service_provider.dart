@@ -427,4 +427,53 @@ class WorkerServiceHandler {
   //     ),
   //   ];
   // }
+Future<Map<String, dynamic>> fetchWorkerStats(String workerId) async {
+    try {
+      // 1. Fetch Completed Jobs & Earnings
+      final servicesResponse = await _supabase
+          .from('services')
+          .select('service_details(price, paid_status)')
+          .eq('worker_id', workerId)
+          .eq('accepted_status', true);
+
+      int completedJobs = 0;
+      double totalEarnings = 0.0;
+
+      final List<dynamic> serviceData = servicesResponse as List<dynamic>;
+      for (var item in serviceData) {
+        final details = item['service_details'];
+        if (details != null && details['paid_status'] == true) {
+          completedJobs++;
+          totalEarnings += (details['price'] ?? 0).toDouble();
+        }
+      }
+
+      // 2. Fetch Ratings
+      final reviewsResponse = await _supabase
+          .from('reviews')
+          .select('rating')
+          .eq('worker_id', workerId);
+
+      double avgRating = 0.0;
+      final List<dynamic> reviewsData = reviewsResponse as List<dynamic>;
+
+      if (reviewsData.isNotEmpty) {
+        double totalRating = 0.0;
+        for (var item in reviewsData) {
+          totalRating += (item['rating'] ?? 0).toDouble();
+        }
+        avgRating = totalRating / reviewsData.length;
+      }
+
+      return {
+        'completedJobs': completedJobs,
+        'totalEarnings': totalEarnings,
+        'avgRating': avgRating,
+      };
+    } catch (e) {
+      print('Error fetching stats: $e');
+      return {'completedJobs': 0, 'totalEarnings': 0.0, 'avgRating': 0.0};
+    }
+  }
+
 }
