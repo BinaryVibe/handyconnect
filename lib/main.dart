@@ -3,6 +3,7 @@ import 'package:handyconnect/screens/profile_screen.dart';
 import 'package:handyconnect/screens/worker_services_page.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:go_router/go_router.dart';
+import 'screens/worker_history_screen.dart';
 
 // --- Screen Imports ---
 import 'screens/homepage.dart';
@@ -45,6 +46,12 @@ final _router = GoRouter(
       path: '/update-password',
       builder: (context, state) => const UpdatePasswordScreen(),
     ),
+
+GoRoute(
+          path: '/w-dashboard/history',
+          // CHANGE: Replace Placeholder() with the new screen
+          builder: (context, state) => const WorkerHistoryScreen(), 
+        ),
 
 GoRoute(
       path: '/c-dashboard',
