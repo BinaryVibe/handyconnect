@@ -226,8 +226,6 @@ class _WorkerServicesPageState extends State<WorkerServicesPage> {
           const SizedBox(width: 8),
           _buildFilterChip('Pending', 'pending'),
           const SizedBox(width: 8),
-          _buildFilterChip('Accepted', 'accepted'),
-          const SizedBox(width: 8),
           _buildFilterChip('In Progress', 'in_progress'),
           // 'Completed' intentionally left here to show "Completed but Unpaid" jobs
           const SizedBox(width: 8),
