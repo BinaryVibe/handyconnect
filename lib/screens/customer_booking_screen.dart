@@ -3,7 +3,6 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import '../providers/service_provider.dart';
 import '../utils/service_with_worker.dart';
 
-// Theme Constants (matching your dashboard)
 const Color kPrimaryColor = Color.fromARGB(255, 74, 46, 30);
 const Color kBackgroundColor = Color(0xFFF7F2EF);
 
@@ -17,7 +16,7 @@ class CustomerBookingScreen extends StatefulWidget {
 class _CustomerBookingScreenState extends State<CustomerBookingScreen> {
   final CustomerServiceHandler _serviceHandler = CustomerServiceHandler();
   
-  // Fetch current user ID dynamically
+  // Get current user ID
   String get _customerId => Supabase.instance.client.auth.currentUser?.id ?? '';
 
   @override
@@ -46,19 +45,16 @@ class _CustomerBookingScreenState extends State<CustomerBookingScreen> {
           final services = snapshot.data!;
           
           // --- FILTER LOGIC ---
-          // "In Progress": Accepted by worker, but NOT completed/paid yet
-          final inProgressServices = services.where((s) {
+          // 1. Active/Payment Due: Accepted by worker AND Not Paid Yet
+          final activeServices = services.where((s) {
             final isAccepted = s.service.acceptedStatus == true;
             final isNotPaid = s.serviceDetails?.paidStatus == false;
-            // You might also want to check if completedDate is null, depending on your flow
-            final isNotCompleted = s.serviceDetails?.completedDate == null;
-            
-            return isAccepted && (isNotPaid || isNotCompleted);
+            return isAccepted && isNotPaid;
           }).toList();
 
-          // "History/Pending": Not accepted yet OR already completed/paid
+          // 2. History/Pending: Not accepted yet OR Already Paid
           final otherServices = services.where((s) => 
-            !inProgressServices.contains(s)
+            !activeServices.contains(s)
           ).toList();
 
           return RefreshIndicator(
@@ -70,18 +66,18 @@ class _CustomerBookingScreenState extends State<CustomerBookingScreen> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  // --- SECTION: IN PROGRESS ---
-                  if (inProgressServices.isNotEmpty) ...[
+                  // --- ACTIVE / PAYMENT DUE ---
+                  if (activeServices.isNotEmpty) ...[
                     const Text(
-                      "In Progress",
+                      "Active Jobs",
                       style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: kPrimaryColor),
                     ),
                     const SizedBox(height: 12),
-                    ...inProgressServices.map((s) => _buildInProgressCard(s)),
+                    ...activeServices.map((s) => _buildActiveCard(s)),
                     const SizedBox(height: 30),
                   ],
 
-                  // --- SECTION: HISTORY / PENDING ---
+                  // --- HISTORY / PENDING ---
                   if (otherServices.isNotEmpty) ...[
                     const Text(
                       "History & Pending",
@@ -99,11 +95,14 @@ class _CustomerBookingScreenState extends State<CustomerBookingScreen> {
     );
   }
 
-  // --- SPECIAL CARD: IN PROGRESS ---
-  Widget _buildInProgressCard(ServiceWithWorker data) {
+  // --- ACTIVE JOB CARD (Handles Progress & Payment) ---
+  Widget _buildActiveCard(ServiceWithWorker data) {
     final s = data.service;
     final workerName = data.workerName;
     final price = data.serviceDetails?.price;
+    
+    // CHECK: Has the worker marked it as completed?
+    final isJobCompleted = data.serviceDetails?.completedDate != null;
 
     return Card(
       elevation: 3,
@@ -114,10 +113,10 @@ class _CustomerBookingScreenState extends State<CustomerBookingScreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Header: Job Name & Status Badge
+            // Header
             Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Expanded(
                   child: Text(
@@ -125,20 +124,29 @@ class _CustomerBookingScreenState extends State<CustomerBookingScreen> {
                     style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: kPrimaryColor),
                   ),
                 ),
+                // Dynamic Status Badge
                 Container(
                   padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
                   decoration: BoxDecoration(
-                    color: Colors.orange.shade50,
+                    color: isJobCompleted ? Colors.green.shade50 : Colors.blue.shade50,
                     borderRadius: BorderRadius.circular(20),
-                    border: Border.all(color: Colors.orange.shade200),
+                    border: Border.all(
+                      color: isJobCompleted ? Colors.green.shade200 : Colors.blue.shade200
+                    ),
                   ),
-                  child: const Text("In Progress", style: TextStyle(color: Colors.orange, fontWeight: FontWeight.bold, fontSize: 12)),
+                  child: Text(
+                    isJobCompleted ? "Payment Due" : "In Progress",
+                    style: TextStyle(
+                      color: isJobCompleted ? Colors.green : Colors.blue,
+                      fontWeight: FontWeight.bold, 
+                      fontSize: 12
+                    ),
+                  ),
                 ),
               ],
             ),
             const SizedBox(height: 8),
             
-            // Description
             Text(
               s.description ?? "No details provided.",
               style: TextStyle(color: Colors.grey[700], height: 1.4),
@@ -147,7 +155,7 @@ class _CustomerBookingScreenState extends State<CustomerBookingScreen> {
             ),
             const Divider(height: 24),
 
-            // Worker & Price Details
+            // Worker & Price
             Row(
               children: [
                 CircleAvatar(
@@ -180,54 +188,72 @@ class _CustomerBookingScreenState extends State<CustomerBookingScreen> {
 
             const SizedBox(height: 20),
 
-            // --- SEND PAYMENT BUTTON ---
-            SizedBox(
-              width: double.infinity,
-              child: ElevatedButton.icon(
-                onPressed: () {
-                  // TODO: Implement Payment Gateway Logic (e.g., Stripe)
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(
-                      content: Text("Initiating payment of $price PKR to $workerName..."),
-                      backgroundColor: Colors.green,
-                    )
-                  );
-                },
-                icon: const Icon(Icons.payment, color: Colors.white),
-                label: const Text("Send Payment", style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 16)),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.green, 
-                  padding: const EdgeInsets.symmetric(vertical: 14),
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                  elevation: 2,
+            // --- CONDITION: Show Button ONLY if Job is Completed ---
+            if (isJobCompleted)
+              SizedBox(
+                width: double.infinity,
+                child: ElevatedButton.icon(
+                  onPressed: () {
+                    // TODO: Implement Payment Logic
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(content: Text("Processing payment for $workerName..."))
+                    );
+                  },
+                  icon: const Icon(Icons.payment, color: Colors.white),
+                  label: const Text("Send Payment", style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.green, 
+                    padding: const EdgeInsets.symmetric(vertical: 14),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                  ),
+                ),
+              )
+            else
+              // If not completed, show a status container instead of a button
+              Container(
+                width: double.infinity,
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: Colors.grey.shade100,
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(color: Colors.grey.shade300),
+                ),
+                child: const Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Icon(Icons.hourglass_empty, size: 18, color: Colors.grey),
+                    SizedBox(width: 8),
+                    Text(
+                      "Waiting for worker to complete job",
+                      style: TextStyle(color: Colors.grey, fontWeight: FontWeight.w600),
+                    ),
+                  ],
                 ),
               ),
-            ),
           ],
         ),
       ),
     );
   }
 
-  // --- STANDARD CARD (For History/Pending) ---
+  // --- STANDARD CARD (History/Pending) ---
   Widget _buildStandardCard(ServiceWithWorker data) {
     final isPending = !data.service.acceptedStatus;
-    final isCompleted = data.service.acceptedStatus && (data.serviceDetails?.completedDate != null || data.serviceDetails?.paidStatus == true);
+    // Completed AND Paid
+    final isFullyDone = data.service.acceptedStatus && data.serviceDetails?.paidStatus == true;
     
-    // Determine status text and color
     String statusText = "Unknown";
     Color statusColor = Colors.grey;
     
     if (isPending) {
       statusText = "Pending";
       statusColor = Colors.orange;
-    } else if (isCompleted) {
-      statusText = "Completed";
-      statusColor = Colors.blue;
+    } else if (isFullyDone) {
+      statusText = "Paid & Closed";
+      statusColor = Colors.green;
     } else {
-      // Fallback for cases that might slip through filters
-      statusText = "Active"; 
-      statusColor = kPrimaryColor;
+      statusText = "Cancelled"; // Default fallback
+      statusColor = Colors.red;
     }
 
     return Card(
@@ -237,10 +263,7 @@ class _CustomerBookingScreenState extends State<CustomerBookingScreen> {
       child: ListTile(
         contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
         title: Text(data.service.serviceTitle, style: const TextStyle(fontWeight: FontWeight.bold)),
-        subtitle: Padding(
-          padding: const EdgeInsets.only(top: 6.0),
-          child: Text(data.service.description ?? "", maxLines: 1, overflow: TextOverflow.ellipsis),
-        ),
+        subtitle: Text(data.service.description ?? "", maxLines: 1, overflow: TextOverflow.ellipsis),
         trailing: Container(
           padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
           decoration: BoxDecoration(
