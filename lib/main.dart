@@ -46,6 +46,30 @@ final _router = GoRouter(
       builder: (context, state) => const UpdatePasswordScreen(),
     ),
 
+GoRoute(
+      path: '/c-dashboard',
+      builder: (context, state) => const CustomerDashboard(),
+      routes: [
+        // Sub-route for worker details (Used by CustomerDashboard)
+        GoRoute(
+          path: 'w-details',
+          builder: (context, state) {
+            Worker worker = state.extra as Worker;
+            return WorkerDetailScreen(worker: worker);
+          },
+          routes: [
+            GoRoute(
+              path: 'book-service',
+              builder: (context, state) {
+                Worker worker = state.extra as Worker;
+                return BookServiceScreen(worker: worker);
+              },
+            ),
+          ],
+        ),
+      ],
+    ),
+
     // -----------------------------------------------------------
     ShellRoute(
       builder: (context, state, child) {
