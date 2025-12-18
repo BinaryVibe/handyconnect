@@ -57,6 +57,43 @@ class CustomerServiceHandler {
     }
   }
 
+
+
+Future<void> makePayment(String serviceId) async {
+    try {
+      await _supabase
+          .from('service_details')
+          .update({'paid_status': true})
+          .eq('service_id', serviceId);
+    } catch (e) {
+      throw Exception('Failed to process payment: $e');
+    }
+  }
+
+  // --- 2. Submit Rating & Review ---
+  Future<void> submitReview({
+    required String serviceId,
+    required String workerId,
+    required double rating,
+    required String comment,
+  }) async {
+    try {
+      final userId = _supabase.auth.currentUser?.id;
+      if (userId == null) return;
+
+      await _supabase.from('reviews').insert({
+        'service_id': serviceId,
+        'worker_id': workerId,
+        'reviewer_id': userId, // Assuming your reviews table has this
+        'rating': rating,
+        'comment': comment,
+        'created_at': DateTime.now().toIso8601String(),
+      });
+    } catch (e) {
+      throw Exception('Failed to submit review: $e');
+    }
+  }
+
   // List<ServiceWithWorker> _getMockCustomerServices() {
   //   final now = DateTime.now();
 
