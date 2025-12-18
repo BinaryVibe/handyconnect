@@ -69,7 +69,7 @@ class _LoginScreenState extends State<LoginScreen> {
       final role = await _userSupabaseService.getValue('role');
       switch (role) {
         case 'worker':
-          landingPage = '/w-dashboard';
+          landingPage = '/w-dashboard/services';
           break;
         case 'customer':
           landingPage = '/c-dashboard';
