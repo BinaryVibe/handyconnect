@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 import '../components/worker_service_card.dart';
 import '../providers/service_provider.dart';
 import '../providers/worker_provider.dart';
@@ -102,14 +103,7 @@ class _WorkerServicesPageState extends State<WorkerServicesPage> {
   }
 
   void _navigateToDetails(ServiceWithCustomer serviceWithCustomer) {
-    Navigator.push(
-      context,
-      MaterialPageRoute(
-        builder: (context) => ServiceRequestDetailsScreen(
-          serviceId: serviceWithCustomer.service.id,
-        ),
-      ),
-    ).then((_) {
+    context.push('/w-dashboard/services/show/${serviceWithCustomer.service.id}').then((_) {
       // Reload list when returning (updates status if changed)
       _loadServices();
     });

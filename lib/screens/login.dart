@@ -72,7 +72,7 @@ class _LoginScreenState extends State<LoginScreen> {
           landingPage = '/w-dashboard/services';
           break;
         case 'customer':
-          landingPage = '/c-dashboard';
+          landingPage = '/c-dashboard/home';
           break;
         default:
           throw UnimplementedError(

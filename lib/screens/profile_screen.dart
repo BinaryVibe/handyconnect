@@ -5,6 +5,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 import 'package:image_picker/image_picker.dart';
+import 'dart:io' show Platform;
 
 // --- Theme Constants ---
 const Color kPrimaryColor = Color.fromARGB(255, 74, 46, 30);
@@ -39,7 +40,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
   final _skillController = TextEditingController();
   List<String> _skills = [];
   bool _isAvailable = false;
-  
+
   // --- New Worker Stats ---
   int _completedJobs = 0;
   double _totalEarnings = 0.0;
@@ -161,7 +162,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
       if (mounted) setState(() => _isLoading = false);
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Error: $e')));
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('Error: $e')));
         setState(() => _isLoading = false);
       }
     }
@@ -194,9 +197,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
             ),
           );
 
-      final imageUrl = _supabase.storage
-          .from('avatars')
-          .getPublicUrl(fileName);
+      final imageUrl = _supabase.storage.from('avatars').getPublicUrl(fileName);
 
       final imageUrlWithTimestamp =
           '$imageUrl?t=${DateTime.now().millisecondsSinceEpoch}';
@@ -236,7 +237,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
   Future<void> _saveChanges() async {
     setState(() => _isSaving = true);
     try {
-
       await _supabase
           .from('profiles')
           .update({
@@ -282,13 +282,13 @@ class _ProfileScreenState extends State<ProfileScreen> {
     try {
       await _supabase.auth.signOut();
       if (mounted) {
-        context.go('/login'); 
+        context.go('/login');
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Error signing out: $e')),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('Error signing out: $e')));
       }
     }
   }
@@ -368,10 +368,15 @@ class _ProfileScreenState extends State<ProfileScreen> {
   }
 
   String constructRedirectURL() {
-    final scheme = kIsWeb ? 'http://127.0.0.1:3000/#/' : 'handyconnect://';
-    return _isWorker
-        ? '${scheme}w-dashboard/profile'
-        : '${scheme}c-dashboard/profile';
+    late final String scheme;
+    if (kIsWeb) {
+      scheme = 'http://127.0.0.1:3000/#/';
+    }
+    if (Platform.isAndroid) {
+      scheme = 'handyconnect://';
+    }
+    print(scheme);
+    return _isWorker ? '${scheme}profile' : '${scheme}profile';
   }
 
   // --- 6. CHANGE EMAIL LOGIC ---
@@ -413,9 +418,11 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     UserAttributes(email: newEmail),
                     emailRedirectTo: constructRedirectURL(),
                   );
-                  await _supabase.from('profiles').update({
-                    "email": newEmail,
-                  }).eq('id', _supabase.auth.currentUser!.id);
+
+                  await _supabase
+                      .from('profiles')
+                      .update({"email": newEmail})
+                      .eq('id', _supabase.auth.currentUser!.id);
 
                   if (mounted) {
                     ScaffoldMessenger.of(context).showSnackBar(
@@ -508,7 +515,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
                   await _supabase.auth.signOut();
 
-                
                   if (mounted) {
                     ScaffoldMessenger.of(context).showSnackBar(
                       const SnackBar(
@@ -803,7 +809,12 @@ class _ProfileScreenState extends State<ProfileScreen> {
     );
   }
 
-  Widget _buildStatItem(IconData icon, String value, String label, Color color) {
+  Widget _buildStatItem(
+    IconData icon,
+    String value,
+    String label,
+    Color color,
+  ) {
     return Column(
       children: [
         Icon(icon, color: color, size: 28),
@@ -963,7 +974,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(12),
           ),
-          padding: EdgeInsets.zero, 
+          padding: EdgeInsets.zero,
         ),
         icon: const Icon(Icons.lock_outline, color: kPrimaryColor, size: 20),
         label: const Text(

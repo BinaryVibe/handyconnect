@@ -1,5 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:handyconnect/screens/customer_booking_screen.dart';
+import 'package:handyconnect/screens/customer_home_page.dart';
+import 'package:handyconnect/screens/messages_page.dart';
 import 'package:handyconnect/screens/profile_screen.dart';
+import 'package:handyconnect/screens/service_request_detail_screen.dart';
 import 'package:handyconnect/screens/worker_services_page.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:go_router/go_router.dart';
@@ -10,8 +14,7 @@ import 'screens/homepage.dart';
 import 'screens/login.dart';
 import 'screens/signup.dart';
 import 'screens/role_selection.dart';
-import 'screens/customer_dashboard.dart';
-import 'screens/worker_dashboard.dart';
+import 'screens/dashboard.dart';
 import 'screens/worker_details.dart';
 import 'screens/book_service_screen.dart';
 
@@ -47,46 +50,47 @@ final _router = GoRouter(
       builder: (context, state) => const UpdatePasswordScreen(),
     ),
 
-GoRoute(
-          path: '/w-dashboard/history',
-          // CHANGE: Replace Placeholder() with the new screen
-          builder: (context, state) => const WorkerHistoryScreen(), 
-        ),
-
-GoRoute(
-      path: '/c-dashboard',
-      builder: (context, state) => const CustomerDashboard(),
-      routes: [
-        // Sub-route for worker details (Used by CustomerDashboard)
-        GoRoute(
-          path: 'w-details',
-          builder: (context, state) {
-            Worker worker = state.extra as Worker;
-            return WorkerDetailScreen(worker: worker);
-          },
-          routes: [
-            GoRoute(
-              path: 'book-service',
-              builder: (context, state) {
-                Worker worker = state.extra as Worker;
-                return BookServiceScreen(worker: worker);
-              },
-            ),
-          ],
-        ),
-      ],
-    ),
 
     // -----------------------------------------------------------
     ShellRoute(
       builder: (context, state, child) {
-        return WorkerDashboard(child: child);
+        return Dashboard(child: child);
       },
       routes: [
         // For pages in the navigation bar
         GoRoute(
           path: '/w-dashboard/services',
           builder: (context, state) => const WorkerServicesPage(),
+          routes: [
+            GoRoute(
+              path: 'show/:serviceId',
+              builder: (context, state) {
+                final serviceId = state.pathParameters['serviceId']!;
+                return ServiceRequestDetailsScreen(serviceId: serviceId,);
+              },
+              routes: [
+                // This is the sub-route for booking
+                GoRoute(
+                  path: 'book-service',
+                  builder: (context, state) {
+                    Worker worker = state.extra as Worker;
+                    return BookServiceScreen(worker: worker);
+                  },
+                ),
+              ],
+            ),
+          ],
+        ),
+        GoRoute(
+          path: '/w-dashboard/history',
+          builder: (context, state) => const WorkerHistoryScreen(),
+        ),
+        
+
+        // Customer Dashboard
+        GoRoute(
+          path: '/c-dashboard/home',
+          builder: (context, state) => const CustomerHomePage(),
           routes: [
             GoRoute(
               path: 'w-details',
@@ -110,16 +114,16 @@ GoRoute(
         ),
 
         GoRoute(
-          path: '/w-dashboard/profile',
+          path: '/profile',
           builder: (context, state) => const ProfileScreen(),
         ),
         GoRoute(
-          path: '/w-dashboard/history',
-          builder: (context, state) => const Placeholder(),
+          path: '/c-dashboard/bookings',
+          builder: (context, state) => const CustomerBookingScreen(),
         ),
         GoRoute(
-          path: '/w-dashboard/messages',
-          builder: (context, state) => const Placeholder(),
+          path: '/messages',
+          builder: (context, state) => const MessagesPage(),
         ),
       ],
     ),
@@ -145,6 +149,9 @@ Future<void> main() async {
     final AuthChangeEvent event = data.event;
     if (event == AuthChangeEvent.passwordRecovery) {
       _router.go('/update-password');
+    }
+    else if (event == AuthChangeEvent.userUpdated) {
+      _router.go('/login');
     }
   });
   // ----------------------------------

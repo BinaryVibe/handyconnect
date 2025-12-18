@@ -1,16 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
-import 'customer_booking_screen.dart';
+
 import '../models/worker.dart';
 import '../providers/worker_provider.dart';
-import 'profile_screen.dart';
 
-const Color kPrimaryColor = Color.fromARGB(
-  255,
-  74,
-  46,
-  30,
-); // buttons + headings
+const Color kPrimaryColor = Color.fromARGB(255, 74, 46, 30);
 const Color kFieldColor = Color(0xFFE9DFD8); // input backgrounds
 const Color kBackgroundColor = Color(0xFFF7F2EF); // main background
 const Color listTileColor = Color(0xFFad8042);
@@ -19,15 +13,14 @@ const Color tagsBgColor = Color(0xFFBFC882);
 const Color professionColor = Color(0xFFede0d4);
 const Color nameColor = Color(0xffe6ccb2);
 
-// Main Dashboard Screen
-class CustomerDashboard extends StatefulWidget {
-  const CustomerDashboard({super.key});
+class CustomerHomePage extends StatefulWidget {
+  const CustomerHomePage({super.key});
 
   @override
-  State<CustomerDashboard> createState() => _CustomerDashboardState();
+  State<CustomerHomePage> createState() => _CustomerHomePageState();
 }
 
-class _CustomerDashboardState extends State<CustomerDashboard> {
+class _CustomerHomePageState extends State<CustomerHomePage> {
   final WorkerHandler _supabaseService = WorkerHandler();
   final TextEditingController _searchController = TextEditingController();
 
@@ -40,6 +33,12 @@ class _CustomerDashboardState extends State<CustomerDashboard> {
   void initState() {
     super.initState();
     _loadWorkers();
+  }
+
+  @override
+  void dispose() {
+    _searchController.dispose();
+    super.dispose();
   }
 
   Future<void> _loadWorkers() async {
@@ -84,80 +83,10 @@ class _CustomerDashboardState extends State<CustomerDashboard> {
 
   @override
   Widget build(BuildContext context) {
-    late Widget page;
-    switch (_selectedIndex) {
-      case 0:
-        page = _buildHomePage();
-        break;
-      case 1:
-        page = CustomerBookingScreen();
-        break;
-      case 2:
-        page = Placeholder();
-        break;
-      case 3:
-        page = const ProfileScreen();
-        break;
-      default:
-        throw UnimplementedError("No widger for $_selectedIndex");
-    }
-    return LayoutBuilder(
-      builder: (context, constraints) {
-        final isMobile = constraints.maxWidth < 600;
-
-        if (isMobile) {
-          return Scaffold(
-            backgroundColor: kBackgroundColor,
-            body: page,
-            bottomNavigationBar: _buildBottomNavigationBar(),
-          );
-        }
-
-        return Scaffold(
-          backgroundColor: kBackgroundColor,
-          body: Row(
-            children: [
-              _buildNavigationRail(),
-              Expanded(child: page),
-            ],
-          ),
-        );
-      },
-    );
-  }
-
-  Widget _buildNavigationRail() {
-    return NavigationRail(
-      selectedIndex: _selectedIndex,
-      backgroundColor: kPrimaryColor,
-      onDestinationSelected: (index) => setState(() => _selectedIndex = index),
-      selectedIconTheme: IconThemeData(color: tagsBgColor),
-      unselectedIconTheme: const IconThemeData(color: Colors.white),
-      selectedLabelTextStyle: TextStyle(color: tagsBgColor),
-      unselectedLabelTextStyle: const TextStyle(color: Colors.white),
-
-      labelType: NavigationRailLabelType.all, // Always show labels
-      destinations: const [
-        NavigationRailDestination(icon: Icon(Icons.home), label: Text('Home')),
-        NavigationRailDestination(
-          icon: Icon(Icons.bookmark),
-          label: Text('Bookings'),
-        ),
-        NavigationRailDestination(
-          icon: Icon(Icons.chat),
-          label: Text('Messages'),
-        ),
-        NavigationRailDestination(
-          icon: Icon(Icons.person),
-          label: Text('Profile'),
-        ),
-      ],
-    );
+    return _buildHomePage();
   }
 
   Widget _buildHomePage() {
-    // print("filteredWorkerList");
-    // print(_filteredWorkers);
     return Column(
       children: [
         Container(
@@ -273,29 +202,6 @@ class _CustomerDashboardState extends State<CustomerDashboard> {
       ),
     );
   }
-
-  Widget _buildBottomNavigationBar() {
-    return BottomNavigationBar(
-      currentIndex: _selectedIndex,
-      backgroundColor: kPrimaryColor,
-      onTap: (index) => setState(() => _selectedIndex = index),
-      type: BottomNavigationBarType.fixed,
-      selectedItemColor: tagsBgColor,
-      unselectedItemColor: Colors.white,
-      items: const [
-        BottomNavigationBarItem(icon: Icon(Icons.home), label: 'Home'),
-        BottomNavigationBarItem(icon: Icon(Icons.bookmark), label: 'Bookings'),
-        BottomNavigationBarItem(icon: Icon(Icons.chat), label: 'Messages'),
-        BottomNavigationBarItem(icon: Icon(Icons.person), label: 'Profile'),
-      ],
-    );
-  }
-
-  @override
-  void dispose() {
-    _searchController.dispose();
-    super.dispose();
-  }
 }
 
 // Worker Card Widget
@@ -313,7 +219,7 @@ class WorkerCard extends StatelessWidget {
       color: listTileColor,
       child: InkWell(
         onTap: () {
-          context.push('/c-dashboard/w-details', extra: worker);
+          context.push('/c-dashboard/home/w-details', extra: worker);
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(content: Text('View ${worker.firstName}\'s profile')),
           );

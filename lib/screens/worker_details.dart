@@ -543,7 +543,7 @@ class _WorkerDetailScreenState extends State<WorkerDetailScreen> {
           ElevatedButton(
             onPressed: () {
               context.pop();
-              context.push('/c-dashboard/w-details/book-service', extra: widget.worker);
+              context.push('/c-dashboard/home/w-details/book-service', extra: widget.worker);
             },
             style: ElevatedButton.styleFrom(
               backgroundColor: kPrimaryColor,

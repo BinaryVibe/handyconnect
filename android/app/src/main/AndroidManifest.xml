@@ -38,12 +38,9 @@
                     android:host="update-password" />
                 <data 
                     android:scheme="handyconnect"
-                    android:host="c-dashboard/profile"
+                    android:host="login"
                 />
-                <data 
-                    android:scheme="handyconnect"
-                    android:host="w-dashboard-profile"
-                />
+            
             </intent-filter>
         </activity>
         <!-- Don't delete the meta-data below.
