@@ -1,10 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:handyconnect/providers/worker_provider.dart';
-import '../components/worker_service_card.dart';
-import '../providers/service_provider.dart';
-import '../utils/customer_with_service.dart';
-import 'profile_screen.dart';
-import 'service_request_detail_screen.dart';
+import 'package:go_router/go_router.dart';
+
 // Color Constants
 const Color kPrimaryColor = Color.fromARGB(255, 74, 46, 30);
 const Color kFieldColor = Color(0xFFE9DFD8);
@@ -15,96 +11,28 @@ const Color tagsBgColor = Color(0xFFBFC882);
 const Color professionColor = Color(0xFFede0d4);
 const Color nameColor = Color(0xFFe6ccb2);
 
-
-
 // Worker Dashboard Screen
 class WorkerDashboard extends StatefulWidget {
-  const WorkerDashboard({super.key});
+  final Widget child;
+  const WorkerDashboard({super.key, required this.child});
 
   @override
   State<WorkerDashboard> createState() => _WorkerDashboardState();
 }
 
 class _WorkerDashboardState extends State<WorkerDashboard> {
-  final WorkerServiceHandler _workerServiceHandler = WorkerServiceHandler();
-  final WorkerHandler _workerHandler = WorkerHandler();
-  late final String? _workerId = _workerHandler.userId;
-  List<ServiceWithCustomer> _services = [];
-  List<ServiceWithCustomer> _filteredServices = [];
-  bool _isLoading = true;
-  int _selectedIndex = 0;
-  String _selectedFilter = 'all';
+  String get location => GoRouterState.of(context).uri.toString();
 
-
-
-  @override
-  void initState() {
-    super.initState();
-    _loadServices();
+  int _indexFromLocation(String location) {
+    if (location.startsWith('/w-dashboard/services')) return 0;
+    if (location.startsWith('/w-dashboard/history')) return 1;
+    if (location.startsWith('/w-dashboard/messages')) return 2;
+    if (location.startsWith('/w-dashboard/profile')) return 3;
+    return 0;
   }
-
-  Future<void> _loadServices() async {
-    setState(() => _isLoading = true);
-    try {
-      final services = await _workerServiceHandler.fetchWorkerServices(_workerId!);
-      setState(() {
-        _services = services;
-        _filteredServices = services;
-        _isLoading = false;
-      });
-    } catch (e) {
-      print(e.toString());
-      setState(() => _isLoading = false);
-      _showError('Failed to load services');
-    }
-  }
-
-  void _filterServices(String filter) {
-    setState(() {
-      _selectedFilter = filter;
-      if (filter == 'all') {
-        _filteredServices = _services;
-      } else {
-        _filteredServices = _services
-            .where((service) => service.status == filter)
-            .toList();
-      }
-    });
-  }
-
-  void _showError(String message) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text(message)),
-    );
-  }
-
-  int get _pendingCount =>
-      _services.where((s) => s.status == 'pending').length;
-  int get _acceptedCount =>
-      _services.where((s) => s.status == 'accepted').length;
-  int get _inProgressCount =>
-      _services.where((s) => s.status == 'in_progress').length;
 
   @override
   Widget build(BuildContext context) {
-    late Widget page;
-    switch(_selectedIndex) {
-      case 0:
-        page = _buildServicesPage();
-        break;
-      case 1:
-        page = Placeholder();
-        break;
-      case 2:
-        page = Placeholder();
-        break;
-      case 3:
-        page = const ProfileScreen();
-        break;
-      default:
-        throw UnimplementedError("No widget for $_selectedIndex");
-    }
-
     return LayoutBuilder(
       builder: (context, constraints) {
         final isMobile = constraints.maxWidth < 600;
@@ -112,7 +40,7 @@ class _WorkerDashboardState extends State<WorkerDashboard> {
         if (isMobile) {
           return Scaffold(
             backgroundColor: kBackgroundColor,
-            body: page,
+            body: widget.child,
             bottomNavigationBar: _buildBottomNavigationBar(),
           );
         }
@@ -122,7 +50,7 @@ class _WorkerDashboardState extends State<WorkerDashboard> {
           body: Row(
             children: [
               _buildNavigationRail(),
-              Expanded(child: page),
+              Expanded(child: widget.child),
             ],
           ),
         );
@@ -131,10 +59,11 @@ class _WorkerDashboardState extends State<WorkerDashboard> {
   }
 
   Widget _buildNavigationRail() {
+    // final location = GoRouterState.of(context).uri.toString();
     return NavigationRail(
-      selectedIndex: _selectedIndex,
+      selectedIndex: _indexFromLocation(location),
       backgroundColor: kPrimaryColor,
-      onDestinationSelected: (index) => setState(() => _selectedIndex = index),
+      onDestinationSelected: goAtIndex,
       selectedIconTheme: IconThemeData(color: tagsBgColor),
       unselectedIconTheme: const IconThemeData(color: Colors.white),
       selectedLabelTextStyle: TextStyle(color: tagsBgColor),
@@ -161,229 +90,12 @@ class _WorkerDashboardState extends State<WorkerDashboard> {
     );
   }
 
-  Widget _buildServicesPage() {
-    return Column(
-      children: [
-        Container(
-          padding: const EdgeInsets.all(12.0),
-          decoration: BoxDecoration(color: kPrimaryColor),
-          child: Column(
-            children: [
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  const Text(
-                    "My Services",
-                    style: TextStyle(
-                      color: Colors.white,
-                      fontSize: 20,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                  IconButton(
-                    onPressed: () => {},
-                    icon: const Icon(Icons.notifications, color: Colors.white),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 10),
-              _buildStatCards(),
-              const SizedBox(height: 10),
-              _buildFilterChips(),
-            ],
-          ),
-        ),
-        Expanded(
-          child: _isLoading
-              ? const Center(child: CircularProgressIndicator())
-              : _filteredServices.isEmpty
-                  ? _buildEmptyState()
-                  : _buildServiceList(),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildStatCards() {
-    return Row(
-      children: [
-        Expanded(
-          child: _buildStatCard(
-            'Pending',
-            _pendingCount.toString(),
-            Icons.pending_actions,
-            Colors.orange,
-          ),
-        ),
-        const SizedBox(width: 8),
-        Expanded(
-          child: _buildStatCard(
-            'Accepted',
-            _acceptedCount.toString(),
-            Icons.check_circle,
-            Colors.green,
-          ),
-        ),
-        const SizedBox(width: 8),
-        Expanded(
-          child: _buildStatCard(
-            'In Progress',
-            _inProgressCount.toString(),
-            Icons.pending,
-            Colors.blue,
-          ),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildStatCard(String label, String count, IconData icon, Color color) {
-    return Container(
-      padding: const EdgeInsets.all(12),
-      decoration: BoxDecoration(
-        color: kFieldColor,
-        borderRadius: BorderRadius.circular(12),
-      ),
-      child: Column(
-        children: [
-          Icon(icon, color: color, size: 24),
-          const SizedBox(height: 4),
-          Text(
-            count,
-            style: TextStyle(
-              fontSize: 20,
-              fontWeight: FontWeight.bold,
-              color: kPrimaryColor,
-            ),
-          ),
-          Text(
-            label,
-            style: TextStyle(
-              fontSize: 11,
-              color: kPrimaryColor,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildFilterChips() {
-    return SingleChildScrollView(
-      scrollDirection: Axis.horizontal,
-      child: Row(
-        children: [
-          _buildFilterChip('All', 'all'),
-          const SizedBox(width: 8),
-          _buildFilterChip('Pending', 'pending'),
-          const SizedBox(width: 8),
-          _buildFilterChip('Accepted', 'accepted'),
-          const SizedBox(width: 8),
-          _buildFilterChip('In Progress', 'in_progress'),
-          const SizedBox(width: 8),
-          _buildFilterChip('Completed', 'completed'),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildFilterChip(String label, String value) {
-    final isSelected = _selectedFilter == value;
-    return FilterChip(
-      label: Text(label),
-      selected: isSelected,
-      onSelected: (_) => _filterServices(value),
-      backgroundColor: kFieldColor,
-      selectedColor: tagsBgColor,
-      labelStyle: TextStyle(
-        color: isSelected ? const Color(0xFF3E4C22) : kPrimaryColor,
-        fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
-      ),
-    );
-  }
-
-  Widget _buildServiceList() {
-    return RefreshIndicator(
-      onRefresh: _loadServices,
-      child: LayoutBuilder(
-        builder: (context, constraints) {
-          final isMobile = constraints.maxWidth < 600;
-
-          if (isMobile) {
-            return ListView.builder(
-              padding: const EdgeInsets.all(16),
-              itemCount: _filteredServices.length,
-              itemBuilder: (context, index) {
-                return ServiceCard(
-                  serviceWithCustomer: _filteredServices[index],
-                  onTap: () => _navigateToDetails(_filteredServices[index]),
-                );
-              },
-            );
-          }
-
-          return GridView.builder(
-            padding: const EdgeInsets.all(16),
-            itemCount: _filteredServices.length,
-            gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-              crossAxisCount: MediaQuery.of(context).size.width ~/ 400,
-              mainAxisSpacing: 16,
-              crossAxisSpacing: 16,
-              childAspectRatio: 1.8,
-            ),
-            itemBuilder: (context, index) {
-              return ServiceCard(
-                serviceWithCustomer: _filteredServices[index],
-                onTap: () => _navigateToDetails(_filteredServices[index]),
-              );
-            },
-          );
-        },
-      ),
-    );
-  }
-void _navigateToDetails(ServiceWithCustomer serviceWithCustomer) {
-    Navigator.push(
-      context,
-      MaterialPageRoute(
-        // CHANGE: Use the new screen and pass only the ID
-        builder: (context) => ServiceRequestDetailsScreen(
-          serviceId: serviceWithCustomer.service.id, 
-        ),
-      ),
-    ).then((_) {
-      // RELOAD: Refresh the list when coming back 
-      // (so if you Accepted/Declined, the list updates immediately)
-      _loadServices(); 
-    });
-  }
-
-  Widget _buildEmptyState() {
-    return Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Icon(Icons.work_off, size: 64, color: Colors.grey[400]),
-          const SizedBox(height: 16),
-          Text(
-            'No services found',
-            style: TextStyle(fontSize: 18, color: Colors.grey[600]),
-          ),
-          const SizedBox(height: 8),
-          Text(
-            'Check back later for new service requests',
-            style: TextStyle(color: Colors.grey[500]),
-          ),
-        ],
-      ),
-    );
-  }
-
   Widget _buildBottomNavigationBar() {
+    // final location = GoRouterState.of(context).uri.toString();
     return BottomNavigationBar(
-      currentIndex: _selectedIndex,
+      currentIndex: _indexFromLocation(location),
       backgroundColor: kPrimaryColor,
-      onTap: (index) => setState(() => _selectedIndex = index),
+      onTap: goAtIndex,
       type: BottomNavigationBarType.fixed,
       selectedItemColor: tagsBgColor,
       unselectedItemColor: Colors.white,
@@ -396,39 +108,28 @@ void _navigateToDetails(ServiceWithCustomer serviceWithCustomer) {
     );
   }
 
+  void goAtIndex(int index) {
+    switch (index) {
+      case 0:
+        context.go('/w-dashboard/services');
+        break;
+      case 1:
+        context.go('/w-dashboard/history');
+        break;
+      case 2:
+        context.go('/w-dashboard/messages');
+        break;
+      case 3:
+        context.go('/w-dashboard/profile');
+        break;
+    }
+    setState(() {
+      
+    });
+  }
+
   @override
   void dispose() {
     super.dispose();
-  }
-}
-
-// Service Card Widget
-
-
-// Placeholder Detail Screen
-class ServiceDetailScreen extends StatelessWidget {
-  final ServiceWithCustomer serviceWithCustomer;
-
-  const ServiceDetailScreen({
-    super.key,
-    required this.serviceWithCustomer,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: kBackgroundColor,
-      appBar: AppBar(
-        title: const Text('Service Details'),
-        backgroundColor: kPrimaryColor,
-        foregroundColor: Colors.white,
-      ),
-      body: Center(
-        child: Text(
-          'Detail screen for: ${serviceWithCustomer.service.serviceTitle}',
-          style: const TextStyle(fontSize: 18),
-        ),
-      ),
-    );
   }
 }
