@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
-import 'package:intl/intl.dart';
 import 'package:supabase_flutter/supabase_flutter.dart'; 
 import '../models/worker.dart';
 
@@ -22,84 +21,25 @@ class _BookServiceScreenState extends State<BookServiceScreen> {
   // --- Controllers ---
   final _titleController = TextEditingController();
   final _descriptionController = TextEditingController();
-  final _priceController = TextEditingController();
   final _locationController = TextEditingController();
 
   // --- State Variables ---
-  DateTime? _selectedDate;
-  TimeOfDay? _selectedTime;
   bool _isSubmitting = false;
 
   @override
   void dispose() {
     _titleController.dispose();
     _descriptionController.dispose();
-    _priceController.dispose();
     _locationController.dispose();
     super.dispose();
   }
 
-  // --- Date & Time Pickers ---
-  Future<void> _pickDate() async {
-    final DateTime? picked = await showDatePicker(
-      context: context,
-      initialDate: DateTime.now(),
-      firstDate: DateTime.now(),
-      lastDate: DateTime.now().add(const Duration(days: 365)),
-      builder: (context, child) {
-        return Theme(
-          data: Theme.of(context).copyWith(
-            colorScheme: const ColorScheme.light(
-              primary: kPrimaryColor,
-              onPrimary: Colors.white,
-              onSurface: kPrimaryColor,
-            ),
-          ),
-          child: child!,
-        );
-      },
-    );
-    if (picked != null && picked != _selectedDate) {
-      setState(() {
-        _selectedDate = picked;
-      });
-    }
-  }
-
-  Future<void> _pickTime() async {
-    final TimeOfDay? picked = await showTimePicker(
-      context: context,
-      initialTime: TimeOfDay.now(),
-      builder: (context, child) {
-        return Theme(
-          data: Theme.of(context).copyWith(
-            colorScheme: const ColorScheme.light(
-              primary: kPrimaryColor,
-              onPrimary: Colors.white,
-              onSurface: kPrimaryColor,
-            ),
-          ),
-          child: child!,
-        );
-      },
-    );
-    if (picked != null && picked != _selectedTime) {
-      setState(() {
-        _selectedTime = picked;
-      });
-    }
-  }
-
   // --- SUBMIT LOGIC (Push to Supabase) ---
   Future<void> _submitBooking() async {
-    // 1. Validate Inputs
-    if (_titleController.text.isEmpty ||
-        _locationController.text.isEmpty ||
-        _priceController.text.isEmpty ||
-        _selectedDate == null ||
-        _selectedTime == null) {
+    // 1. Validate Inputs (Removed Price/Date checks)
+    if (_titleController.text.isEmpty || _locationController.text.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Please fill in all fields')),
+        const SnackBar(content: Text('Please fill in title and location')),
       );
       return;
     }
@@ -110,16 +50,7 @@ class _BookServiceScreenState extends State<BookServiceScreen> {
       // 2. Get Current User ID (Customer)
       final userId = Supabase.instance.client.auth.currentUser!.id;
 
-      // 3. Combine Date and Time
-      final DateTime finalDateTime = DateTime(
-        _selectedDate!.year,
-        _selectedDate!.month,
-        _selectedDate!.day,
-        _selectedTime!.hour,
-        _selectedTime!.minute,
-      );
-
-      // 4. Insert into 'services' table AND return the new row
+      // 3. Insert into 'services' table AND return the new row
       final serviceResponse = await Supabase.instance.client
           .from('services')
           .insert({
@@ -136,19 +67,19 @@ class _BookServiceScreenState extends State<BookServiceScreen> {
 
       final newServiceId = serviceResponse['id'];
 
-      // 5. Insert into 'service_details' table using the new ID
+      // 4. Insert into 'service_details' table 
+      // NOTE: We are no longer sending 'price' or 'booking_date'.
+      // Ensure your Database columns are Nullable or have defaults.
       await Supabase.instance.client
           .from('service_details')
           .insert({
             'service_id': newServiceId,
-            'price': double.parse(_priceController.text.trim()),
-            'booking_date': finalDateTime.toIso8601String(),
             'paid_status': false,
           });
 
       if (!mounted) return;
 
-      // 6. Success!
+      // 5. Success!
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
           content: Text('Booking Request Sent Successfully!'),
@@ -160,7 +91,7 @@ class _BookServiceScreenState extends State<BookServiceScreen> {
       context.pop();
 
     } catch (error) {
-      // 7. Error Handling
+      // 6. Error Handling
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
@@ -194,10 +125,9 @@ class _BookServiceScreenState extends State<BookServiceScreen> {
         ),
         centerTitle: true,
       ),
-      // --- UPDATE: Centered Layout for Desktop ---
       body: Center(
         child: ConstrainedBox(
-          constraints: const BoxConstraints(maxWidth: 600), // Limit width on desktop
+          constraints: const BoxConstraints(maxWidth: 600),
           child: SingleChildScrollView(
             padding: const EdgeInsets.all(20.0),
             child: Column(
@@ -217,15 +147,6 @@ class _BookServiceScreenState extends State<BookServiceScreen> {
                 _buildTextField("Service Title", _titleController),
                 const SizedBox(height: 12),
                 _buildTextField("Description", _descriptionController, maxLines: 3),
-                const SizedBox(height: 12),
-                _buildTextField(
-                  "Your Offer (Price)",
-                  _priceController,
-                  inputType: TextInputType.number,
-                  prefix: "\$ ", 
-                ),
-                const SizedBox(height: 12),
-                _buildDateTimeRow(),
                 const SizedBox(height: 12),
                 _buildTextField("Location", _locationController, icon: Icons.location_on_outlined),
                 const SizedBox(height: 30),
@@ -322,80 +243,6 @@ class _BookServiceScreenState extends State<BookServiceScreen> {
           borderSide: const BorderSide(color: kPrimaryColor, width: 1.5),
         ),
       ),
-    );
-  }
-
-  Widget _buildDateTimeRow() {
-    return Row(
-      children: [
-        Expanded(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              const Text("Booking Date",
-                  style: TextStyle(fontWeight: FontWeight.w600, color: kPrimaryColor, fontSize: 12)),
-              const SizedBox(height: 6),
-              GestureDetector(
-                onTap: _pickDate,
-                child: Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 14),
-                  decoration: BoxDecoration(
-                    color: kFieldColor,
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Text(
-                        _selectedDate == null
-                            ? "Select Date"
-                            : DateFormat('MMM d, y').format(_selectedDate!),
-                        style: TextStyle(
-                            color: _selectedDate == null ? Colors.grey[500] : Colors.black87),
-                      ),
-                      Icon(Icons.calendar_today, size: 18, color: Colors.grey[600]),
-                    ],
-                  ),
-                ),
-              ),
-            ],
-          ),
-        ),
-        const SizedBox(width: 16),
-        Expanded(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              const Text("Start Time",
-                  style: TextStyle(fontWeight: FontWeight.w600, color: kPrimaryColor, fontSize: 12)),
-              const SizedBox(height: 6),
-              GestureDetector(
-                onTap: _pickTime,
-                child: Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 14),
-                  decoration: BoxDecoration(
-                    color: kFieldColor,
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Text(
-                        _selectedTime == null
-                            ? "Select Time"
-                            : _selectedTime!.format(context),
-                        style: TextStyle(
-                            color: _selectedTime == null ? Colors.grey[500] : Colors.black87),
-                      ),
-                      Icon(Icons.access_time, size: 18, color: Colors.grey[600]),
-                    ],
-                  ),
-                ),
-              ),
-            ],
-          ),
-        ),
-      ],
     );
   }
 
