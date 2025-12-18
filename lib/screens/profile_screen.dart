@@ -11,6 +11,7 @@ const Color kFieldColor = Color(0xFFE9DFD8);
 const Color kBackgroundColor = Color(0xFFF7F2EF);
 const Color tagsBgColor = Color(0xFFBFC882);
 const Color kErrorColor = Color(0xFFD32F2F);
+const Color listTileColor = Color(0xFFad8042); // Added for stats card
 
 class ProfileScreen extends StatefulWidget {
   const ProfileScreen({super.key});
@@ -37,6 +38,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
   final _skillController = TextEditingController();
   List<String> _skills = [];
   bool _isAvailable = false;
+  
+  // --- New Worker Stats ---
+  int _completedJobs = 0;
+  double _totalEarnings = 0.0;
 
   // --- Display Vars ---
   String? _email;
@@ -97,11 +102,34 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
       // B. Conditional Fetch based on Role
       if (_isWorker) {
+        // 1. Fetch Worker Details
         final workerData = await _supabase
             .from('workers')
             .select()
             .eq('id', _userId!)
             .single();
+
+        // 2. Fetch Earnings & Job Stats
+        final servicesResponse = await _supabase
+            .from('services')
+            .select('service_details(price, paid_status)')
+            .eq('worker_id', _userId!)
+            .eq('accepted_status', true);
+
+        int jobs = 0;
+        double earnings = 0.0;
+
+        final List<dynamic> serviceData = servicesResponse as List<dynamic>;
+        for (var item in serviceData) {
+          final details = item['service_details'];
+          // Check if details exists and is a Map (standard 1:1 relation)
+          if (details != null && details is Map) {
+            if (details['paid_status'] == true) {
+              jobs++;
+              earnings += (details['price'] ?? 0).toDouble();
+            }
+          }
+        }
 
         if (mounted) {
           setState(() {
@@ -110,6 +138,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
             if (workerData['skills'] != null) {
               _skills = List<String>.from(workerData['skills']);
             }
+            _completedJobs = jobs;
+            _totalEarnings = earnings;
           });
         }
       } else {
@@ -129,9 +159,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
       if (mounted) setState(() => _isLoading = false);
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(SnackBar(content: Text('Error: $e')));
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Error: $e')));
         setState(() => _isLoading = false);
       }
     }
@@ -553,34 +581,42 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   const SizedBox(height: 24),
 
                   if (_isWorker) ...[
+                    // --- Worker Layout ---
                     if (isMobile) ...[
                       _buildPersonalInfoCard(),
                       const SizedBox(height: 16),
+                      _buildStatsCard(), // NEW: Stats Card for Mobile
+                      const SizedBox(height: 16),
                       _buildWorkerDetailsCard(),
                     ] else ...[
+                      // Desktop: 3 columns or wrapped
                       Row(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Expanded(child: _buildPersonalInfoCard()),
                           const SizedBox(width: 24),
-                          Expanded(child: _buildWorkerDetailsCard()),
+                          Expanded(
+                            child: Column(
+                              children: [
+                                _buildStatsCard(), // NEW: Stats Card for Desktop
+                                const SizedBox(height: 24),
+                                _buildWorkerDetailsCard(),
+                              ],
+                            ),
+                          ),
                         ],
                       ),
                     ],
                   ] else ...[
+                    // --- Customer Layout ---
                     _buildPersonalInfoCard(),
                   ],
 
                   const SizedBox(height: 40),
 
                   // --- BUTTONS ---
-
-                  // 1. Save Changes
                   _buildSaveButton(),
-
                   const SizedBox(height: 20),
-
-                  // 2. Change Password & Email
                   Row(
                     children: [
                       Expanded(child: _buildChangePasswordButton()),
@@ -588,19 +624,12 @@ class _ProfileScreenState extends State<ProfileScreen> {
                       Expanded(child: _buildChangeEmailButton()),
                     ],
                   ),
-
                   const SizedBox(height: 16),
-
-                  // 3. LOGOUT BUTTON (New)
                   _buildLogoutButton(),
-
                   const SizedBox(height: 40),
                   const Divider(),
                   const SizedBox(height: 10),
-
-                  // 4. Delete Profile
                   _buildDeleteProfileButton(),
-
                   const SizedBox(height: 40),
                 ],
               ),
@@ -716,6 +745,81 @@ class _ProfileScreenState extends State<ProfileScreen> {
           ),
         ],
       ),
+    );
+  }
+
+  // --- NEW: WORKER STATS CARD ---
+  Widget _buildStatsCard() {
+    return Card(
+      elevation: 0, // Using manual shadow in _buildCard style
+      margin: EdgeInsets.zero,
+      color: Colors.transparent,
+      child: Container(
+        padding: const EdgeInsets.all(20),
+        decoration: BoxDecoration(
+          color: listTileColor,
+          borderRadius: BorderRadius.circular(16),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.1),
+              blurRadius: 10,
+              offset: const Offset(0, 4),
+            ),
+          ],
+        ),
+        child: Column(
+          children: [
+            const Text(
+              'Performance Statistics',
+              style: TextStyle(
+                fontSize: 18,
+                fontWeight: FontWeight.bold,
+                color: Color(0xFFe6ccb2),
+              ),
+            ),
+            const SizedBox(height: 20),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceAround,
+              children: [
+                _buildStatItem(
+                  Icons.work,
+                  _completedJobs.toString(),
+                  'Jobs Done',
+                  Colors.white,
+                ),
+                Container(height: 40, width: 1, color: const Color(0xFFede0d4)),
+                _buildStatItem(
+                  Icons.attach_money,
+                  'Rs. ${_totalEarnings.toInt()}',
+                  'Total Earnings',
+                  Colors.greenAccent,
+                ),
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildStatItem(IconData icon, String value, String label, Color color) {
+    return Column(
+      children: [
+        Icon(icon, color: color, size: 28),
+        const SizedBox(height: 8),
+        Text(
+          value,
+          style: const TextStyle(
+            fontSize: 20,
+            fontWeight: FontWeight.bold,
+            color: Color(0xFFe6ccb2),
+          ),
+        ),
+        Text(
+          label,
+          style: const TextStyle(fontSize: 12, color: Color(0xFFede0d4)),
+        ),
+      ],
     );
   }
 
@@ -898,7 +1002,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
     );
   }
 
-  // --- NEW: LOGOUT BUTTON ---
   Widget _buildLogoutButton() {
     return SizedBox(
       width: double.infinity,
