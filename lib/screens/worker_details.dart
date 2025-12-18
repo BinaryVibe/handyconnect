@@ -1,8 +1,9 @@
 import 'package:flutter/material.dart';
-import 'package:go_router/go_router.dart'; // <--- Added Import
+import 'package:go_router/go_router.dart';
 import '../models/worker.dart';
+import '../providers/service_provider.dart'; // Required for fetching stats
 
-// Color Constants
+// --- Color Constants ---
 const Color kPrimaryColor = Color.fromARGB(255, 74, 46, 30);
 const Color kFieldColor = Color(0xFFE9DFD8);
 const Color kBackgroundColor = Color(0xFFF7F2EF);
@@ -12,10 +13,48 @@ const Color tagsBgColor = Color(0xFFBFC882);
 const Color professionColor = Color(0xFFede0d4);
 const Color nameColor = Color(0xFFe6ccb2);
 
-class WorkerDetailScreen extends StatelessWidget {
+class WorkerDetailScreen extends StatefulWidget {
   final Worker worker;
 
   const WorkerDetailScreen({super.key, required this.worker});
+
+  @override
+  State<WorkerDetailScreen> createState() => _WorkerDetailScreenState();
+}
+
+class _WorkerDetailScreenState extends State<WorkerDetailScreen> {
+  final WorkerServiceHandler _workerHandler = WorkerServiceHandler();
+  
+  // Dynamic State Variables
+  bool _isLoadingStats = true;
+  int _completedJobs = 0;
+  double _totalEarnings = 0.0;
+  double _dynamicRating = 0.0;
+
+  @override
+  void initState() {
+    super.initState();
+    // 1. Initialize with the data passed from Dashboard (so it's not empty)
+    _dynamicRating = widget.worker.avgRating; 
+    _totalEarnings = widget.worker.earnings;
+
+    // 2. Fetch the REAL, fresh data from Supabase immediately
+    _loadStats();
+  }
+
+  Future<void> _loadStats() async {
+    // Calls the function in service_provider.dart
+    final stats = await _workerHandler.fetchWorkerStats(widget.worker.id);
+    
+    if (mounted) {
+      setState(() {
+        _completedJobs = stats['completedJobs'];
+        _totalEarnings = stats['totalEarnings'];
+        _dynamicRating = stats['avgRating']; 
+        _isLoadingStats = false;
+      });
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -24,7 +63,6 @@ class WorkerDetailScreen extends StatelessWidget {
       body: LayoutBuilder(
         builder: (context, constraints) {
           final isMobile = constraints.maxWidth < 900;
-
           return CustomScrollView(
             slivers: [
               _buildSliverAppBar(context, isMobile),
@@ -41,6 +79,7 @@ class WorkerDetailScreen extends StatelessWidget {
   }
 
   Widget _buildSliverAppBar(BuildContext context, bool isMobile) {
+    final worker = widget.worker;
     return SliverAppBar(
       expandedHeight: isMobile ? 300 : 320,
       floating: false,
@@ -52,7 +91,7 @@ class WorkerDetailScreen extends StatelessWidget {
       ),
       flexibleSpace: FlexibleSpaceBar(
         background: Container(
-          decoration: BoxDecoration(
+          decoration: const BoxDecoration(
             gradient: LinearGradient(
               begin: Alignment.topCenter,
               end: Alignment.bottomCenter,
@@ -85,11 +124,7 @@ class WorkerDetailScreen extends StatelessWidget {
                           : null,
                       backgroundColor: Colors.white,
                       child: worker.avatarUrl == null
-                          ? Icon(
-                              Icons.person,
-                              size: isMobile ? 60 : 70,
-                              color: kPrimaryColor,
-                            )
+                          ? Icon(Icons.person, size: isMobile ? 60 : 70, color: kPrimaryColor)
                           : null,
                     ),
                   ),
@@ -114,17 +149,14 @@ class WorkerDetailScreen extends StatelessWidget {
                 ),
                 const SizedBox(height: 8),
                 Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 16,
-                    vertical: 6,
-                  ),
+                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
                   decoration: BoxDecoration(
                     color: professionColor,
                     borderRadius: BorderRadius.circular(20),
                   ),
                   child: Text(
                     worker.profession,
-                    style: TextStyle(
+                    style: const TextStyle(
                       fontSize: 16,
                       fontWeight: FontWeight.w600,
                       color: kPrimaryColor,
@@ -147,7 +179,7 @@ class WorkerDetailScreen extends StatelessWidget {
         children: [
           _buildAvailabilityCard(),
           const SizedBox(height: 16),
-          _buildStatsCard(),
+          _buildStatsCard(), // DYNAMIC STATS CARD
           const SizedBox(height: 16),
           _buildContactCard(),
           const SizedBox(height: 16),
@@ -176,7 +208,7 @@ class WorkerDetailScreen extends StatelessWidget {
                   children: [
                     _buildAvailabilityCard(),
                     const SizedBox(height: 16),
-                    _buildStatsCard(),
+                    _buildStatsCard(), // DYNAMIC STATS CARD
                     const SizedBox(height: 16),
                     _buildContactCard(),
                   ],
@@ -217,17 +249,17 @@ class WorkerDetailScreen extends StatelessWidget {
               width: 12,
               height: 12,
               decoration: BoxDecoration(
-                color: worker.availability ? Colors.green : Colors.red,
+                color: widget.worker.availability ? Colors.green : Colors.red,
                 shape: BoxShape.circle,
               ),
             ),
             const SizedBox(width: 12),
             Text(
-              worker.availability ? 'Available Now' : 'Currently Busy',
+              widget.worker.availability ? 'Available Now' : 'Currently Busy',
               style: TextStyle(
                 fontSize: 18,
                 fontWeight: FontWeight.bold,
-                color: worker.availability ? Colors.green[700] : Colors.red[700],
+                color: widget.worker.availability ? Colors.green[700] : Colors.red[700],
               ),
             ),
           ],
@@ -236,7 +268,20 @@ class WorkerDetailScreen extends StatelessWidget {
     );
   }
 
+  // --- DYNAMIC STATS CARD (Uses fetched data) ---
   Widget _buildStatsCard() {
+    if (_isLoadingStats) {
+      return Card(
+        elevation: 2,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        color: listTileColor,
+        child: const Padding(
+          padding: EdgeInsets.all(20),
+          child: Center(child: CircularProgressIndicator(color: Colors.white)),
+        ),
+      );
+    }
+
     return Card(
       elevation: 2,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
@@ -245,7 +290,7 @@ class WorkerDetailScreen extends StatelessWidget {
         padding: const EdgeInsets.all(20),
         child: Column(
           children: [
-            Text(
+            const Text(
               'Statistics',
               style: TextStyle(
                 fontSize: 18,
@@ -257,11 +302,13 @@ class WorkerDetailScreen extends StatelessWidget {
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceAround,
               children: [
-                _buildStatItem(Icons.star, worker.avgRating.toStringAsFixed(1), 'Rating', Colors.amber),
+                _buildStatItem(Icons.star, _dynamicRating.toStringAsFixed(1), 'Rating', Colors.amber),
                 Container(height: 50, width: 1, color: professionColor),
-                _buildStatItem(Icons.attach_money, 'Rs. ${(worker.earnings / 1000).toStringAsFixed(0)}k', 'Earnings', Colors.green),
+                _buildStatItem(Icons.work, _completedJobs.toString(), 'Jobs Done', Colors.white),
                 Container(height: 50, width: 1, color: professionColor),
-                _buildStatItem(Icons.verified, worker.verifiedStatus ? 'Yes' : 'No', 'Verified', Colors.blue),
+                // Displaying earnings. Using toInt() for cleanliness. 
+                // You can change to 'Rs. ${(_totalEarnings/1000).toStringAsFixed(0)}k' if you prefer "1k" format.
+                _buildStatItem(Icons.attach_money, 'Rs. ${_totalEarnings.toInt()}', 'Earnings', Colors.green),
               ],
             ),
           ],
@@ -283,7 +330,8 @@ class WorkerDetailScreen extends StatelessWidget {
             color: nameColor,
           ),
         ),
-        Text(label, style: TextStyle(fontSize: 12, color: professionColor)),
+        const SizedBox(height: 4),
+        Text(label, style: const TextStyle(fontSize: 12, color: professionColor)),
       ],
     );
   }
@@ -298,18 +346,14 @@ class WorkerDetailScreen extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(
+            const Text(
               'Contact Information',
-              style: TextStyle(
-                fontSize: 18,
-                fontWeight: FontWeight.bold,
-                color: kPrimaryColor,
-              ),
+              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: kPrimaryColor),
             ),
             const SizedBox(height: 16),
-            _buildContactItem(Icons.email, 'Email', worker.email),
+            _buildContactItem(Icons.email, 'Email', widget.worker.email),
             const SizedBox(height: 12),
-            _buildContactItem(Icons.phone, 'Phone', worker.phoneNumber),
+            _buildContactItem(Icons.phone, 'Phone', widget.worker.phoneNumber),
           ],
         ),
       ),
@@ -332,18 +376,11 @@ class WorkerDetailScreen extends StatelessWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text(
-                label,
-                style: TextStyle(fontSize: 12, color: secondaryTextColor),
-              ),
+              Text(label, style: const TextStyle(fontSize: 12, color: secondaryTextColor)),
               const SizedBox(height: 2),
               SelectableText(
                 value,
-                style: TextStyle(
-                  fontSize: 14,
-                  fontWeight: FontWeight.w500,
-                  color: kPrimaryColor,
-                ),
+                style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w500, color: kPrimaryColor),
               ),
             ],
           ),
@@ -362,50 +399,26 @@ class WorkerDetailScreen extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Row(
+            const Row(
               children: [
                 Icon(Icons.build, color: kPrimaryColor),
-                const SizedBox(width: 8),
-                Text(
-                  'Skills & Expertise',
-                  style: TextStyle(
-                    fontSize: 18,
-                    fontWeight: FontWeight.bold,
-                    color: kPrimaryColor,
-                  ),
-                ),
+                SizedBox(width: 8),
+                Text('Skills & Expertise', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: kPrimaryColor)),
               ],
             ),
             const SizedBox(height: 16),
             Wrap(
               spacing: 10,
               runSpacing: 10,
-              children: worker.skills
-                  .map(
-                    (skill) => Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 16,
-                        vertical: 10,
-                      ),
-                      decoration: BoxDecoration(
-                        color: tagsBgColor,
-                        borderRadius: BorderRadius.circular(20),
-                        border: Border.all(
-                          color: const Color(0xFF3E4C22),
-                          width: 1,
-                        ),
-                      ),
-                      child: Text(
-                        skill,
-                        style: const TextStyle(
-                          fontSize: 14,
-                          fontWeight: FontWeight.w500,
-                          color: Color(0xFF3E4C22),
-                        ),
-                      ),
-                    ),
-                  )
-                  .toList(),
+              children: widget.worker.skills.map((skill) => Container(
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                decoration: BoxDecoration(
+                  color: tagsBgColor,
+                  borderRadius: BorderRadius.circular(20),
+                  border: Border.all(color: const Color(0xFF3E4C22), width: 1),
+                ),
+                child: Text(skill, style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w500, color: Color(0xFF3E4C22))),
+              )).toList(),
             ),
           ],
         ),
@@ -414,6 +427,7 @@ class WorkerDetailScreen extends StatelessWidget {
   }
 
   Widget _buildAboutSection() {
+    final worker = widget.worker;
     return Card(
       elevation: 2,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
@@ -423,31 +437,20 @@ class WorkerDetailScreen extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Row(
+            const Row(
               children: [
                 Icon(Icons.info_outline, color: kPrimaryColor),
-                const SizedBox(width: 8),
-                Text(
-                  'About',
-                  style: TextStyle(
-                    fontSize: 18,
-                    fontWeight: FontWeight.bold,
-                    color: kPrimaryColor,
-                  ),
-                ),
+                SizedBox(width: 8),
+                Text('About', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: kPrimaryColor)),
               ],
             ),
             const SizedBox(height: 16),
             Text(
               'Professional ${worker.profession.toLowerCase()} with expertise in ${worker.skills.take(3).join(", ")}. '
               '${worker.verifiedStatus ? "Verified and background-checked for your safety. " : ""}'
-              'With an average rating of ${worker.avgRating.toStringAsFixed(1)} stars, '
-              '${worker.firstName} has successfully completed numerous projects and earned the trust of many satisfied customers.',
-              style: TextStyle(
-                fontSize: 14,
-                height: 1.6,
-                color: kPrimaryColor.withOpacity(0.8),
-              ),
+              'With an average rating of ${_dynamicRating.toStringAsFixed(1)} stars, '
+              '${worker.firstName} has successfully completed numerous projects.',
+              style: TextStyle(fontSize: 14, height: 1.6, color: kPrimaryColor.withOpacity(0.8)),
             ),
           ],
         ),
@@ -460,33 +463,24 @@ class WorkerDetailScreen extends StatelessWidget {
       width: double.infinity,
       height: 56,
       child: ElevatedButton(
-        onPressed: worker.availability
-            ? () {
-                _showHireDialog(context);
-              }
+        onPressed: widget.worker.availability
+            ? () => _showHireDialog(context)
             : null,
         style: ElevatedButton.styleFrom(
           backgroundColor: kPrimaryColor,
           foregroundColor: Colors.white,
           disabledBackgroundColor: Colors.grey[300],
           disabledForegroundColor: Colors.grey[600],
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(12),
-          ),
-          elevation: worker.availability ? 5 : 0,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+          elevation: widget.worker.availability ? 5 : 0,
         ),
         child: Row(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(
-              worker.availability ? Icons.check_circle : Icons.schedule,
-              size: 24,
-            ),
+            Icon(widget.worker.availability ? Icons.check_circle : Icons.schedule, size: 24),
             const SizedBox(width: 12),
             Text(
-              worker.availability
-                  ? 'Hire ${worker.firstName}'
-                  : 'Currently Unavailable',
+              widget.worker.availability ? 'Hire ${widget.worker.firstName}' : 'Currently Unavailable',
               style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
             ),
           ],
@@ -495,17 +489,16 @@ class WorkerDetailScreen extends StatelessWidget {
     );
   }
 
-  // --- UPDATED DIALOG LOGIC ---
   void _showHireDialog(BuildContext context) {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
         backgroundColor: kBackgroundColor,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-        title: Row(
+        title: const Row(
           children: [
             Icon(Icons.work, color: kPrimaryColor),
-            const SizedBox(width: 8),
+            SizedBox(width: 8),
             Text('Hire Worker', style: TextStyle(color: kPrimaryColor)),
           ],
         ),
@@ -513,10 +506,7 @@ class WorkerDetailScreen extends StatelessWidget {
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(
-              'You are about to send a service request to:',
-              style: TextStyle(color: kPrimaryColor.withOpacity(0.8)),
-            ),
+            Text('You are about to send a service request to:', style: TextStyle(color: kPrimaryColor.withOpacity(0.8))),
             const SizedBox(height: 16),
             Container(
               padding: const EdgeInsets.all(16),
@@ -528,9 +518,7 @@ class WorkerDetailScreen extends StatelessWidget {
                 children: [
                   CircleAvatar(
                     radius: 25,
-                    backgroundImage: worker.avatarUrl != null
-                        ? NetworkImage(worker.avatarUrl!)
-                        : null,
+                    backgroundImage: widget.worker.avatarUrl != null ? NetworkImage(widget.worker.avatarUrl!) : null,
                     backgroundColor: kFieldColor,
                   ),
                   const SizedBox(width: 12),
@@ -538,21 +526,8 @@ class WorkerDetailScreen extends StatelessWidget {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text(
-                          '${worker.firstName} ${worker.lastName}',
-                          style: TextStyle(
-                            fontWeight: FontWeight.bold,
-                            fontSize: 16,
-                            color: kPrimaryColor,
-                          ),
-                        ),
-                        Text(
-                          worker.profession,
-                          style: TextStyle(
-                            color: secondaryTextColor,
-                            fontSize: 14,
-                          ),
-                        ),
+                        Text('${widget.worker.firstName} ${widget.worker.lastName}', style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: kPrimaryColor)),
+                        Text(widget.worker.profession, style: const TextStyle(color: secondaryTextColor, fontSize: 14)),
                       ],
                     ),
                   ),
@@ -560,32 +535,20 @@ class WorkerDetailScreen extends StatelessWidget {
               ),
             ),
             const SizedBox(height: 16),
-            Text(
-              'You will be redirected to the booking form to enter service details.',
-              style: TextStyle(
-                fontSize: 13,
-                color: kPrimaryColor.withOpacity(0.7),
-              ),
-            ),
+            Text('You will be redirected to the booking form.', style: TextStyle(fontSize: 13, color: kPrimaryColor.withOpacity(0.7))),
           ],
         ),
         actions: [
-          TextButton(
-            onPressed: () => context.pop(),
-            child: Text('Cancel', style: TextStyle(color: secondaryTextColor)),
-          ),
+          TextButton(onPressed: () => context.pop(), child: const Text('Cancel', style: TextStyle(color: secondaryTextColor))),
           ElevatedButton(
             onPressed: () {
-              context.pop(); // Close Dialog
-              // Navigate to Book Service Screen
-              context.push('/c-dashboard/w-details/book-service', extra: worker);
+              context.pop();
+              context.push('/c-dashboard/w-details/book-service', extra: widget.worker);
             },
             style: ElevatedButton.styleFrom(
               backgroundColor: kPrimaryColor,
               foregroundColor: Colors.white,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(8),
-              ),
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
             ),
             child: const Text('Confirm'),
           ),
