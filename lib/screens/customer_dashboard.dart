@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
-import '/screens/customer_booking_screen.dart';
+import 'customer_booking_screen.dart';
 import '../models/worker.dart';
 import '../providers/worker_provider.dart';
 import 'profile_screen.dart';
@@ -90,7 +90,7 @@ class _CustomerDashboardState extends State<CustomerDashboard> {
         page = _buildHomePage();
         break;
       case 1:
-        page = CustomerBookingsPage();
+        page = CustomerBookingScreen();
         break;
       case 2:
         page = Placeholder();
