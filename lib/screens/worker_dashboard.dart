@@ -4,6 +4,7 @@ import '../components/worker_service_card.dart';
 import '../providers/service_provider.dart';
 import '../utils/customer_with_service.dart';
 import 'profile_screen.dart';
+import 'service_request_detail_screen.dart';
 // Color Constants
 const Color kPrimaryColor = Color.fromARGB(255, 74, 46, 30);
 const Color kFieldColor = Color(0xFFE9DFD8);
@@ -341,16 +342,20 @@ class _WorkerDashboardState extends State<WorkerDashboard> {
       ),
     );
   }
-
-  void _navigateToDetails(ServiceWithCustomer serviceWithCustomer) {
+void _navigateToDetails(ServiceWithCustomer serviceWithCustomer) {
     Navigator.push(
       context,
       MaterialPageRoute(
-        builder: (context) => ServiceDetailScreen(
-          serviceWithCustomer: serviceWithCustomer,
+        // CHANGE: Use the new screen and pass only the ID
+        builder: (context) => ServiceRequestDetailsScreen(
+          serviceId: serviceWithCustomer.service.id, 
         ),
       ),
-    );
+    ).then((_) {
+      // RELOAD: Refresh the list when coming back 
+      // (so if you Accepted/Declined, the list updates immediately)
+      _loadServices(); 
+    });
   }
 
   Widget _buildEmptyState() {
