@@ -198,21 +198,21 @@ class ServiceCard extends StatelessWidget {
                           ),
                         ),
                       ],
-                    )
-                  else if (details?.bookingDate != null)
-                    Row(
-                      children: [
-                        Icon(Icons.event, size: 16, color: secondaryTextColor),
-                        const SizedBox(width: 4),
-                        Text(
-                          'Booked: ${details!.bookingDate!.day}/${details.bookingDate!.month}',
-                          style: TextStyle(
-                            fontSize: 12,
-                            color: secondaryTextColor,
-                          ),
-                        ),
-                      ],
                     ),
+                  // else if (details?.bookingDate != null)
+                  //   Row(
+                  //     children: [
+                  //       Icon(Icons.event, size: 16, color: secondaryTextColor),
+                  //       const SizedBox(width: 4),
+                  //       Text(
+                  //         'Booked: ${details!.bookingDate!.day}/${details.bookingDate!.month}',
+                  //         style: TextStyle(
+                  //           fontSize: 12,
+                  //           color: secondaryTextColor,
+                  //         ),
+                  //       ),
+                  //     ],
+                  //   ),
                   if (details?.price != null)
                     Row(
                       children: [
