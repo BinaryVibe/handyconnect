@@ -247,7 +247,23 @@ class _ProfileScreenState extends State<ProfileScreen> {
     }
   }
 
-  // --- 4. CHANGE PASSWORD LOGIC ---
+  // --- 4. SIGN OUT ---
+  Future<void> _signOut() async {
+    try {
+      await _supabase.auth.signOut();
+      if (mounted) {
+        context.go('/login'); 
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Error signing out: $e')),
+        );
+      }
+    }
+  }
+
+  // --- 5. CHANGE PASSWORD LOGIC ---
   void _showChangePasswordDialog() {
     final passwordController = TextEditingController();
 
@@ -328,7 +344,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
         : '${scheme}c-dashboard/profile';
   }
 
-  // --- 5. CHANGE EMAIL LOGIC ---
+  // --- 6. CHANGE EMAIL LOGIC ---
   void _showChangeEmailDialog() {
     final emailController = TextEditingController();
 
@@ -404,7 +420,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
     );
   }
 
-  // --- 6. DELETE PROFILE LOGIC ---
+  // --- 7. DELETE PROFILE LOGIC ---
   void _showDeleteProfileDialog() {
     final confirmController = TextEditingController();
 
@@ -557,14 +573,14 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
                   const SizedBox(height: 40),
 
-                  // --- NEW BUTTON LAYOUT ---
+                  // --- BUTTONS ---
 
-                  // 1. Primary Action: Save Changes
+                  // 1. Save Changes
                   _buildSaveButton(),
 
                   const SizedBox(height: 20),
 
-                  // 2. Secondary Actions: Change Password & Email (Side by Side)
+                  // 2. Change Password & Email
                   Row(
                     children: [
                       Expanded(child: _buildChangePasswordButton()),
@@ -573,11 +589,16 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     ],
                   ),
 
+                  const SizedBox(height: 16),
+
+                  // 3. LOGOUT BUTTON (New)
+                  _buildLogoutButton(),
+
                   const SizedBox(height: 40),
                   const Divider(),
                   const SizedBox(height: 10),
 
-                  // 3. Danger Action: Delete Profile
+                  // 4. Delete Profile
                   _buildDeleteProfileButton(),
 
                   const SizedBox(height: 40),
@@ -790,7 +811,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
     );
   }
 
-  // --- BUTTON BUILDERS (UPDATED STYLES) ---
+  // --- BUTTON BUILDERS ---
 
   Widget _buildSaveButton() {
     return SizedBox(
@@ -837,7 +858,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(12),
           ),
-          padding: EdgeInsets.zero, // Compact for small screens
+          padding: EdgeInsets.zero, 
         ),
         icon: const Icon(Icons.lock_outline, color: kPrimaryColor, size: 20),
         label: const Text(
@@ -871,6 +892,33 @@ class _ProfileScreenState extends State<ProfileScreen> {
             fontSize: 16,
             fontWeight: FontWeight.bold,
             color: kPrimaryColor,
+          ),
+        ),
+      ),
+    );
+  }
+
+  // --- NEW: LOGOUT BUTTON ---
+  Widget _buildLogoutButton() {
+    return SizedBox(
+      width: double.infinity,
+      height: 55,
+      child: OutlinedButton.icon(
+        onPressed: _isSaving ? null : _signOut,
+        style: OutlinedButton.styleFrom(
+          side: const BorderSide(color: kErrorColor, width: 2),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12),
+          ),
+          foregroundColor: kErrorColor,
+        ),
+        icon: const Icon(Icons.logout, color: kErrorColor),
+        label: const Text(
+          "Log Out",
+          style: TextStyle(
+            fontSize: 18,
+            fontWeight: FontWeight.bold,
+            color: kErrorColor,
           ),
         ),
       ),
