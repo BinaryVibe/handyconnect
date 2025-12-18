@@ -1,5 +1,6 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:handyconnect/providers/user_provider.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
@@ -45,6 +46,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
   final ImagePicker _picker = ImagePicker();
 
   final _supabase = Supabase.instance.client;
+  final UserHandler _userHandler = UserHandler();
 
   @override
   void initState() {
@@ -458,13 +460,11 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 setState(() => _isLoading = true); // Show full screen loading
 
                 try {
-                  await _supabase
-                      .from('profiles')
-                      .delete()
-                      .eq('id', _userId!);
+                  await _userHandler.deleteUser();
 
                   await _supabase.auth.signOut();
 
+                
                   if (mounted) {
                     ScaffoldMessenger.of(context).showSnackBar(
                       const SnackBar(
@@ -475,6 +475,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     context.go('/login');
                   }
                 } catch (e) {
+                  print(e.toString());
                   if (mounted) {
                     ScaffoldMessenger.of(context).showSnackBar(
                       SnackBar(
