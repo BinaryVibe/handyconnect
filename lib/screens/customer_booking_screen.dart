@@ -16,8 +16,116 @@ class CustomerBookingScreen extends StatefulWidget {
 class _CustomerBookingScreenState extends State<CustomerBookingScreen> {
   final CustomerServiceHandler _serviceHandler = CustomerServiceHandler();
   
-  // Get current user ID
+  // Track processing state to prevent double-clicks
+  String? _processingPaymentId;
+
   String get _customerId => Supabase.instance.client.auth.currentUser?.id ?? '';
+
+  // --- HANDLE PAYMENT & RATING FLOW ---
+  Future<void> _handlePayment(String serviceId, String workerId, String workerName) async {
+    setState(() => _processingPaymentId = serviceId);
+
+    try {
+      // 1. Process Payment
+      await _serviceHandler.makePayment(serviceId);
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text("Payment successful to $workerName!"), backgroundColor: Colors.green),
+        );
+
+        // 2. Show Rating Dialog IMMEDIATELY after payment success
+        await _showRatingDialog(serviceId, workerId, workerName);
+
+        // 3. Refresh UI (This moves the card to History because paid_status is now true)
+        setState(() {}); 
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text("Action failed: $e"), backgroundColor: Colors.red),
+        );
+      }
+    } finally {
+      if (mounted) {
+        setState(() => _processingPaymentId = null);
+      }
+    }
+  }
+
+  // --- RATING DIALOG (Updated) ---
+  Future<void> _showRatingDialog(String serviceId, String workerId, String workerName) async {
+    double _rating = 0.0; // Start at 0 to enforce selection
+    final _commentController = TextEditingController();
+
+    await showDialog(
+      context: context,
+      barrierDismissible: false, // Force user to interact
+      builder: (ctx) {
+        return StatefulBuilder(
+          builder: (context, setDialogState) {
+            return AlertDialog(
+              title: Text("Rate $workerName", style: const TextStyle(color: kPrimaryColor)),
+              content: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  const Text("Please rate the service to continue"),
+                  const SizedBox(height: 20),
+                  // Star Rating Row
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: List.generate(5, (index) {
+                      return IconButton(
+                        onPressed: () => setDialogState(() => _rating = index + 1.0),
+                        icon: Icon(
+                          index < _rating ? Icons.star : Icons.star_border,
+                          color: Colors.amber,
+                          size: 32,
+                        ),
+                      );
+                    }),
+                  ),
+                  const SizedBox(height: 10),
+                 
+                ],
+              ),
+              actions: [
+                // Skip Button Removed
+                
+                ElevatedButton(
+                  // Disable button if rating is 0
+                  onPressed: _rating == 0.0 ? null : () async {
+                    try {
+                      await _serviceHandler.submitReview(
+                        serviceId: serviceId,
+                        workerId: workerId,
+                        rating: _rating,
+                        comment: _commentController.text.trim(),
+                      );
+                      if (mounted) {
+                        Navigator.pop(ctx);
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(content: Text("Review submitted!"), backgroundColor: kPrimaryColor),
+                        );
+                      }
+                    } catch (e) {
+                      print(e); // Handle error silently or show toast
+                      Navigator.pop(ctx); 
+                    }
+                  },
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: kPrimaryColor,
+                    disabledBackgroundColor: Colors.grey, // Visual cue for disabled state
+                  ),
+                  child: const Text("Submit", style: TextStyle(color: Colors.white)),
+                ),
+              ],
+            );
+          },
+        );
+      },
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -28,6 +136,7 @@ class _CustomerBookingScreenState extends State<CustomerBookingScreen> {
         backgroundColor: kPrimaryColor,
         foregroundColor: Colors.white,
         elevation: 0,
+        automaticallyImplyLeading: false, 
       ),
       body: FutureBuilder<List<ServiceWithWorker>>(
         future: _customerId.isNotEmpty 
@@ -45,14 +154,14 @@ class _CustomerBookingScreenState extends State<CustomerBookingScreen> {
           final services = snapshot.data!;
           
           // --- FILTER LOGIC ---
-          // 1. Active/Payment Due: Accepted by worker AND Not Paid Yet
+          // Active: Accepted AND Not Paid Yet
           final activeServices = services.where((s) {
             final isAccepted = s.service.acceptedStatus == true;
             final isNotPaid = s.serviceDetails?.paidStatus == false;
             return isAccepted && isNotPaid;
           }).toList();
 
-          // 2. History/Pending: Not accepted yet OR Already Paid
+          // History: Not accepted OR Already Paid
           final otherServices = services.where((s) => 
             !activeServices.contains(s)
           ).toList();
@@ -66,23 +175,15 @@ class _CustomerBookingScreenState extends State<CustomerBookingScreen> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  // --- ACTIVE / PAYMENT DUE ---
                   if (activeServices.isNotEmpty) ...[
-                    const Text(
-                      "Active Jobs",
-                      style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: kPrimaryColor),
-                    ),
+                    const Text("Active Jobs", style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: kPrimaryColor)),
                     const SizedBox(height: 12),
                     ...activeServices.map((s) => _buildActiveCard(s)),
                     const SizedBox(height: 30),
                   ],
 
-                  // --- HISTORY / PENDING ---
                   if (otherServices.isNotEmpty) ...[
-                    const Text(
-                      "History & Pending",
-                      style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: Colors.grey),
-                    ),
+                    const Text("History & Pending", style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: Colors.grey)),
                     const SizedBox(height: 12),
                     ...otherServices.map((s) => _buildStandardCard(s)),
                   ],
@@ -95,14 +196,12 @@ class _CustomerBookingScreenState extends State<CustomerBookingScreen> {
     );
   }
 
-  // --- ACTIVE JOB CARD (Handles Progress & Payment) ---
   Widget _buildActiveCard(ServiceWithWorker data) {
     final s = data.service;
     final workerName = data.workerName;
     final price = data.serviceDetails?.price;
-    
-    // CHECK: Has the worker marked it as completed?
     final isJobCompleted = data.serviceDetails?.completedDate != null;
+    final isProcessing = _processingPaymentId == s.id;
 
     return Card(
       elevation: 3,
@@ -113,94 +212,64 @@ class _CustomerBookingScreenState extends State<CustomerBookingScreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Header
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Expanded(
-                  child: Text(
-                    s.serviceTitle,
-                    style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: kPrimaryColor),
-                  ),
-                ),
-                // Dynamic Status Badge
+                Expanded(child: Text(s.serviceTitle, style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: kPrimaryColor))),
                 Container(
                   padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
                   decoration: BoxDecoration(
                     color: isJobCompleted ? Colors.green.shade50 : Colors.blue.shade50,
                     borderRadius: BorderRadius.circular(20),
-                    border: Border.all(
-                      color: isJobCompleted ? Colors.green.shade200 : Colors.blue.shade200
-                    ),
+                    border: Border.all(color: isJobCompleted ? Colors.green.shade200 : Colors.blue.shade200),
                   ),
                   child: Text(
                     isJobCompleted ? "Payment Due" : "In Progress",
-                    style: TextStyle(
-                      color: isJobCompleted ? Colors.green : Colors.blue,
-                      fontWeight: FontWeight.bold, 
-                      fontSize: 12
-                    ),
+                    style: TextStyle(color: isJobCompleted ? Colors.green : Colors.blue, fontWeight: FontWeight.bold, fontSize: 12),
                   ),
                 ),
               ],
             ),
             const SizedBox(height: 8),
-            
-            Text(
-              s.description ?? "No details provided.",
-              style: TextStyle(color: Colors.grey[700], height: 1.4),
-              maxLines: 2,
-              overflow: TextOverflow.ellipsis,
-            ),
+            Text(s.description ?? "No details.", style: TextStyle(color: Colors.grey[700]), maxLines: 2, overflow: TextOverflow.ellipsis),
             const Divider(height: 24),
-
-            // Worker & Price
             Row(
               children: [
+                // --- AVATAR FIX (From previous steps) ---
                 CircleAvatar(
-                  radius: 16,
+                  radius: 20,
                   backgroundColor: Colors.grey[200],
-                  backgroundImage: data.workerAvatar != null ? NetworkImage(data.workerAvatar!) : null,
-                  child: data.workerAvatar == null ? const Icon(Icons.person, size: 20, color: Colors.grey) : null,
+                  backgroundImage: (data.workerAvatar != null && data.workerAvatar!.isNotEmpty)
+                      ? NetworkImage(data.workerAvatar!)
+                      : null,
+                  child: (data.workerAvatar == null || data.workerAvatar!.isEmpty)
+                      ? const Icon(Icons.person, size: 24, color: Colors.grey)
+                      : null,
                 ),
-                const SizedBox(width: 10),
-                Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    const Text("Worker", style: TextStyle(fontSize: 12, color: Colors.grey)),
-                    Text(workerName, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
-                  ],
-                ),
+                const SizedBox(width: 12),
+                Text(workerName, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
                 const Spacer(),
-                Column(
-                  crossAxisAlignment: CrossAxisAlignment.end,
-                  children: [
-                    const Text("Agreed Price", style: TextStyle(fontSize: 12, color: Colors.grey)),
-                    Text(
-                      price != null ? "$price PKR" : "Pending",
-                      style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.green, fontSize: 16),
-                    ),
-                  ],
+                Text(
+                  price != null ? "$price PKR" : "Pending",
+                  style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.green, fontSize: 16),
                 ),
               ],
             ),
-
             const SizedBox(height: 20),
 
-            // --- CONDITION: Show Button ONLY if Job is Completed ---
+            // --- PAY BUTTON LOGIC ---
             if (isJobCompleted)
               SizedBox(
                 width: double.infinity,
                 child: ElevatedButton.icon(
-                  onPressed: () {
-                    // TODO: Implement Payment Logic
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(content: Text("Processing payment for $workerName..."))
-                    );
-                  },
-                  icon: const Icon(Icons.payment, color: Colors.white),
-                  label: const Text("Send Payment", style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+                  onPressed: isProcessing ? null : () => _handlePayment(s.id, s.workerId, workerName),
+                  icon: isProcessing 
+                      ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2)) 
+                      : const Icon(Icons.payment, color: Colors.white),
+                  label: Text(
+                    isProcessing ? "Processing..." : "Send Payment",
+                    style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+                  ),
                   style: ElevatedButton.styleFrom(
                     backgroundColor: Colors.green, 
                     padding: const EdgeInsets.symmetric(vertical: 14),
@@ -209,24 +278,16 @@ class _CustomerBookingScreenState extends State<CustomerBookingScreen> {
                 ),
               )
             else
-              // If not completed, show a status container instead of a button
               Container(
                 width: double.infinity,
                 padding: const EdgeInsets.all(12),
-                decoration: BoxDecoration(
-                  color: Colors.grey.shade100,
-                  borderRadius: BorderRadius.circular(12),
-                  border: Border.all(color: Colors.grey.shade300),
-                ),
+                decoration: BoxDecoration(color: Colors.grey.shade100, borderRadius: BorderRadius.circular(12)),
                 child: const Row(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
                     Icon(Icons.hourglass_empty, size: 18, color: Colors.grey),
                     SizedBox(width: 8),
-                    Text(
-                      "Waiting for worker to complete job",
-                      style: TextStyle(color: Colors.grey, fontWeight: FontWeight.w600),
-                    ),
+                    Text("Waiting for worker completion", style: TextStyle(color: Colors.grey, fontWeight: FontWeight.w600)),
                   ],
                 ),
               ),
@@ -236,34 +297,18 @@ class _CustomerBookingScreenState extends State<CustomerBookingScreen> {
     );
   }
 
-  // --- STANDARD CARD (History/Pending) ---
   Widget _buildStandardCard(ServiceWithWorker data) {
     final isPending = !data.service.acceptedStatus;
-    // Completed AND Paid
-    final isFullyDone = data.service.acceptedStatus && data.serviceDetails?.paidStatus == true;
+    final isPaid = data.serviceDetails?.paidStatus == true;
     
-    String statusText = "Unknown";
-    Color statusColor = Colors.grey;
-    
-    if (isPending) {
-      statusText = "Pending";
-      statusColor = Colors.orange;
-    } else if (isFullyDone) {
-      statusText = "Paid & Closed";
-      statusColor = Colors.green;
-    } else {
-      statusText = "Cancelled"; // Default fallback
-      statusColor = Colors.red;
-    }
+    String statusText = isPending ? "Pending" : (isPaid ? "Paid & Closed" : "Cancelled");
+    Color statusColor = isPending ? Colors.orange : (isPaid ? Colors.green : Colors.red);
 
     return Card(
       elevation: 1,
       margin: const EdgeInsets.only(bottom: 12),
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
       child: ListTile(
-        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
         title: Text(data.service.serviceTitle, style: const TextStyle(fontWeight: FontWeight.bold)),
-        subtitle: Text(data.service.description ?? "", maxLines: 1, overflow: TextOverflow.ellipsis),
         trailing: Container(
           padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
           decoration: BoxDecoration(
@@ -271,10 +316,7 @@ class _CustomerBookingScreenState extends State<CustomerBookingScreen> {
             borderRadius: BorderRadius.circular(8),
             border: Border.all(color: statusColor.withOpacity(0.3)),
           ),
-          child: Text(
-            statusText,
-            style: TextStyle(color: statusColor, fontWeight: FontWeight.bold, fontSize: 12),
-          ),
+          child: Text(statusText, style: TextStyle(color: statusColor, fontWeight: FontWeight.bold, fontSize: 12)),
         ),
       ),
     );
