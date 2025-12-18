@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:handyconnect/screens/profile_screen.dart';
+import 'package:handyconnect/screens/worker_services_page.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:go_router/go_router.dart';
 
@@ -45,34 +47,53 @@ final _router = GoRouter(
     ),
 
     // -----------------------------------------------------------
-    GoRoute(
-      path: '/c-dashboard',
-      builder: (context, state) => const CustomerDashboard(),
-    ),
-    GoRoute(
-      path: '/w-dashboard',
-      builder: (context, state) => const WorkerDashboard(),
-    ),
-
-    // --- Worker Details & Booking Route ---
-    GoRoute(
-      path: '/c-dashboard/w-details',
-      builder: (context, state) {
-        // We expect a 'Worker' object to be passed in 'extra'
-        Worker worker = state.extra as Worker;
-        return WorkerDetailScreen(worker: worker);
+    ShellRoute(
+      builder: (context, state, child) {
+        return WorkerDashboard(child: child);
       },
       routes: [
-        // This is the sub-route for booking
+        // For pages in the navigation bar
         GoRoute(
-          path: 'book-service',
-          builder: (context, state) {
-            Worker worker = state.extra as Worker;
-            return BookServiceScreen(worker: worker);
-          },
+          path: '/w-dashboard/services',
+          builder: (context, state) => const WorkerServicesPage(),
+          routes: [
+            GoRoute(
+              path: 'w-details',
+              builder: (context, state) {
+                // We expect a 'Worker' object to be passed in 'extra'
+                Worker worker = state.extra as Worker;
+                return WorkerDetailScreen(worker: worker);
+              },
+              routes: [
+                // This is the sub-route for booking
+                GoRoute(
+                  path: 'book-service',
+                  builder: (context, state) {
+                    Worker worker = state.extra as Worker;
+                    return BookServiceScreen(worker: worker);
+                  },
+                ),
+              ],
+            ),
+          ],
+        ),
+
+        GoRoute(
+          path: '/w-dashboard/profile',
+          builder: (context, state) => const ProfileScreen(),
+        ),
+        GoRoute(
+          path: '/w-dashboard/history',
+          builder: (context, state) => const Placeholder(),
+        ),
+        GoRoute(
+          path: '/w-dashboard/messages',
+          builder: (context, state) => const Placeholder(),
         ),
       ],
     ),
+
+    // --- Worker Details & Booking Route ---
   ],
 );
 
