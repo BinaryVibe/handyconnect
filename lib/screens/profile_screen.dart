@@ -127,7 +127,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
       }
 
       if (mounted) setState(() => _isLoading = false);
-
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(
@@ -322,6 +321,13 @@ class _ProfileScreenState extends State<ProfileScreen> {
     );
   }
 
+  String constructRedirectURL() {
+    final scheme = kIsWeb ? 'http://127.0.0.1:3000/#/' : 'handyconnect://';
+    return _isWorker
+        ? '${scheme}w-dashboard/profile'
+        : '${scheme}c-dashboard/profile';
+  }
+
   // --- 5. CHANGE EMAIL LOGIC ---
   void _showChangeEmailDialog() {
     final emailController = TextEditingController();
@@ -357,9 +363,14 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 setState(() => _isSaving = true);
 
                 try {
-                  await Supabase.instance.client.auth.updateUser(
+                  await _supabase.auth.updateUser(
                     UserAttributes(email: newEmail),
+                    emailRedirectTo: constructRedirectURL(),
                   );
+                  await _supabase.from('profiles').update({
+                    "email": newEmail,
+                  }).eq('id', _supabase.auth.currentUser!.id);
+
                   if (mounted) {
                     ScaffoldMessenger.of(context).showSnackBar(
                       SnackBar(
