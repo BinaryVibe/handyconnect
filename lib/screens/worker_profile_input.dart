@@ -134,7 +134,7 @@ class _WorkerProfileDetailsScreenState extends State<WorkerProfileDetailsScreen>
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('Profile Saved Successfully!'), backgroundColor: Colors.green),
         );
-        context.go('/w-dashboard');
+        context.go('/w-dashboard/services');
       }
 
     } catch (e) {
