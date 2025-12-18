@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
-// --- IMPORT THE NEW PROVIDER FILE ---
 import '../providers/service_request_provider.dart';
 
 // --- Theme Constants ---
@@ -10,6 +9,7 @@ const Color kFieldColor = Color(0xFFE9DFD8);
 const Color kBackgroundColor = Color(0xFFF7F2EF);
 const Color kAcceptColor = Color(0xFF4CAF50);
 const Color kDeclineColor = Color(0xFFD32F2F);
+const Color kCompleteColor = Color(0xFF2196F3);
 
 class ServiceRequestDetailsScreen extends StatefulWidget {
   final String serviceId;
@@ -21,16 +21,15 @@ class ServiceRequestDetailsScreen extends StatefulWidget {
 }
 
 class _ServiceRequestDetailsScreenState extends State<ServiceRequestDetailsScreen> {
-  // --- Initialize the Provider ---
   final ServiceRequestHandler _requestHandler = ServiceRequestHandler();
 
-  // --- State Variables ---
   bool _isLoading = true;
-  bool _showInputFields = false;
+  bool _showInputFields = false; // Only used for initial acceptance
+  
   Map<String, dynamic>? _serviceData;
   Map<String, dynamic>? _customerProfile;
+  Map<String, dynamic>? _serviceDetails;
 
-  // --- Input Controllers ---
   final _priceController = TextEditingController();
   DateTime? _estimatedEndDate;
 
@@ -46,15 +45,14 @@ class _ServiceRequestDetailsScreenState extends State<ServiceRequestDetailsScree
     super.dispose();
   }
 
-  // --- 1. Fetch Data (Using Provider) ---
   Future<void> _fetchData() async {
     try {
       final data = await _requestHandler.fetchRequestDetails(widget.serviceId);
-
       if (mounted) {
         setState(() {
           _serviceData = data.serviceData;
           _customerProfile = data.customerProfile;
+          _serviceDetails = data.serviceDetails;
           _isLoading = false;
         });
       }
@@ -68,101 +66,9 @@ class _ServiceRequestDetailsScreenState extends State<ServiceRequestDetailsScree
     }
   }
 
-  // --- 2. Decline Logic (Using Provider) ---
-  Future<void> _handleDecline() async {
-    final confirm = await showDialog<bool>(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        title: const Text("Decline Job"),
-        content: const Text("Are you sure? This will remove the request permanently."),
-        actions: [
-          TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text("Cancel")),
-          TextButton(
-            onPressed: () => Navigator.pop(ctx, true), 
-            child: const Text("Decline", style: TextStyle(color: kDeclineColor))
-          ),
-        ],
-      ),
-    );
-
-    if (confirm != true) return;
-
-    setState(() => _isLoading = true);
-
-    try {
-      await _requestHandler.declineService(widget.serviceId);
-
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Request declined.'), backgroundColor: kDeclineColor),
-        );
-        context.pop(); // Return to Dashboard
-      }
-    } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Error: $e')));
-        setState(() => _isLoading = false);
-      }
-    }
-  }
-
-  // --- 3. Accept Logic (UI Only) ---
-  void _handleAcceptPress() {
-    showDialog(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        title: const Text("Accept Job"),
-        content: const Text("You are about to accept this job. Please provide a price estimate."),
-        actions: [
-          TextButton(onPressed: () => Navigator.pop(ctx), child: const Text("Cancel")),
-          ElevatedButton(
-            onPressed: () {
-              Navigator.pop(ctx);
-              setState(() => _showInputFields = true);
-            },
-            style: ElevatedButton.styleFrom(backgroundColor: kPrimaryColor),
-            child: const Text("Proceed", style: TextStyle(color: Colors.white)),
-          ),
-        ],
-      ),
-    );
-  }
-
-  // --- 4. Final Submission (Using Provider) ---
-  Future<void> _submitFinalAcceptance() async {
-    if (_priceController.text.isEmpty || _estimatedEndDate == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text("Please enter Price and Estimated End Date")),
-      );
-      return;
-    }
-
-    setState(() => _isLoading = true);
-
-    try {
-      await _requestHandler.acceptService(
-        serviceId: widget.serviceId,
-        price: double.parse(_priceController.text.trim()),
-        estimatedEndDate: _estimatedEndDate!.toIso8601String(),
-      );
-
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Job Accepted!'), backgroundColor: kAcceptColor),
-        );
-        context.pop(); // Return to Dashboard
-      }
-    } catch (e) {
-      if (mounted) {
-        setState(() => _isLoading = false);
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Error: $e')));
-      }
-    }
-  }
-
-  // --- Date Picker Helper ---
-  Future<void> _pickEndDate() async {
-    final picked = await showDatePicker(
+  // --- Date Picker Logic ---
+  Future<DateTime?> _pickDate() async {
+    return await showDatePicker(
       context: context,
       initialDate: DateTime.now().add(const Duration(days: 1)),
       firstDate: DateTime.now(),
@@ -170,45 +76,141 @@ class _ServiceRequestDetailsScreenState extends State<ServiceRequestDetailsScree
       builder: (context, child) {
         return Theme(
           data: Theme.of(context).copyWith(
-            colorScheme: const ColorScheme.light(
-              primary: kPrimaryColor,
-              onPrimary: Colors.white, 
-              onSurface: kPrimaryColor,
-            ),
+            colorScheme: const ColorScheme.light(primary: kPrimaryColor, onPrimary: Colors.white, onSurface: kPrimaryColor),
           ),
           child: child!,
         );
       },
     );
-    if (picked != null) setState(() => _estimatedEndDate = picked);
   }
 
-  // --- UI Build ---
+  // --- Update Existing Job (Time or Completion) ---
+  Future<void> _updateJobStatus({bool markCompleted = false, bool updateTime = false}) async {
+    DateTime? newDate;
+    
+    if (updateTime) {
+      newDate = await _pickDate();
+      if (newDate == null) return; // User cancelled
+    }
+
+    if (markCompleted) {
+      final confirm = await showDialog<bool>(
+        context: context,
+        builder: (ctx) => AlertDialog(
+          title: const Text("Complete Job?"),
+          content: const Text("Are you sure you want to mark this work as completed?"),
+          actions: [
+            TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text("Cancel")),
+            TextButton(onPressed: () => Navigator.pop(ctx, true), child: const Text("Yes, Complete")),
+          ],
+        ),
+      );
+      if (confirm != true) return;
+    }
+
+    setState(() => _isLoading = true);
+
+    try {
+      await _requestHandler.updateJobProgress(
+        serviceId: widget.serviceId,
+        newEstimatedEnd: newDate,
+        markAsCompleted: markCompleted,
+      );
+
+      // Refresh data to show new status
+      await _fetchData(); 
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(markCompleted ? 'Job Marked as Completed!' : 'Time Updated Successfully'),
+            backgroundColor: kAcceptColor,
+          ),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() => _isLoading = false);
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Error: $e')));
+      }
+    }
+  }
+
+  // --- Initial Acceptance Logic ---
+  Future<void> _submitInitialAcceptance() async {
+    if (_priceController.text.isEmpty || _estimatedEndDate == null) {
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Please enter Price and Estimated End Date")));
+      return;
+    }
+    setState(() => _isLoading = true);
+    try {
+      await _requestHandler.acceptService(
+        serviceId: widget.serviceId,
+        price: double.parse(_priceController.text.trim()),
+        estimatedEndDate: _estimatedEndDate!.toIso8601String(),
+      );
+      await _fetchData(); // Refresh UI to show "In Progress" state
+    } catch (e) {
+      if (mounted) {
+        setState(() => _isLoading = false);
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Error: $e')));
+      }
+    }
+  }
+
+  Future<void> _handleDecline() async {
+    // ... (Keep existing decline logic)
+    final confirm = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text("Decline Job"),
+        content: const Text("Are you sure? This will remove the request."),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text("Cancel")),
+          TextButton(onPressed: () => Navigator.pop(ctx, true), child: const Text("Decline", style: TextStyle(color: kDeclineColor))),
+        ],
+      ),
+    );
+    if (confirm != true) return;
+
+    setState(() => _isLoading = true);
+    try {
+      await _requestHandler.declineService(widget.serviceId);
+      if (mounted) {
+        Navigator.pop(context);
+      }
+    } catch (e) {
+      setState(() => _isLoading = false);
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     if (_isLoading) {
-      return const Scaffold(
-        backgroundColor: kBackgroundColor,
-        body: Center(child: CircularProgressIndicator(color: kPrimaryColor)),
-      );
+      return const Scaffold(backgroundColor: kBackgroundColor, body: Center(child: CircularProgressIndicator(color: kPrimaryColor)));
     }
 
     if (_serviceData == null || _customerProfile == null) {
       return const Scaffold(body: Center(child: Text("Service not found")));
     }
 
-    final avatarUrl = _customerProfile!['avatar_url'];
-    final firstName = _customerProfile!['first_name'] ?? 'Unknown';
-    final lastName = _customerProfile!['last_name'] ?? 'Customer';
-    final location = _serviceData!['location'] ?? 'No location provided';
-    final title = _serviceData!['service_title'] ?? 'No Title';
-    final description = _serviceData!['description'] ?? 'No Description';
+    // Data Extraction
+    final s = _serviceData!;
+    final p = _customerProfile!;
+    final details = _serviceDetails;
+    
+    final isAccepted = s['accepted_status'] == true;
+    final isCompleted = details != null && details['completed_date'] != null;
+    
+    // Display Strings
+    final expectedEnd = details?['expected_end'] != null 
+        ? DateFormat('MMM d, y').format(DateTime.parse(details!['expected_end'])) 
+        : "Not Set";
 
     return Scaffold(
       backgroundColor: kBackgroundColor,
       appBar: AppBar(
         backgroundColor: kPrimaryColor,
-        elevation: 0,
         title: const Text("Job Request", style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
         centerTitle: true,
         iconTheme: const IconThemeData(color: Colors.white),
@@ -221,52 +223,101 @@ class _ServiceRequestDetailsScreenState extends State<ServiceRequestDetailsScree
             child: Column(
               children: [
                 const SizedBox(height: 40),
+                // Customer Avatar
                 Center(
-                  child: Stack(
-                    alignment: Alignment.bottomRight,
-                    children: [
-                      Container(
-                        padding: const EdgeInsets.all(4),
-                        decoration: const BoxDecoration(color: kBackgroundColor, shape: BoxShape.circle),
-                        child: CircleAvatar(
-                          radius: 60,
-                          backgroundColor: Colors.grey[300],
-                          backgroundImage: avatarUrl != null ? NetworkImage(avatarUrl) : null,
-                          child: avatarUrl == null 
-                              ? const Icon(Icons.person, size: 60, color: Colors.grey) 
-                              : null,
-                        ),
-                      ),
-                    ],
+                  child: Container(
+                    padding: const EdgeInsets.all(4),
+                    decoration: const BoxDecoration(color: kBackgroundColor, shape: BoxShape.circle),
+                    child: CircleAvatar(
+                      radius: 60,
+                      backgroundColor: Colors.grey[300],
+                      backgroundImage: p['avatar_url'] != null ? NetworkImage(p['avatar_url']) : null,
+                      child: p['avatar_url'] == null ? const Icon(Icons.person, size: 60, color: Colors.grey) : null,
+                    ),
                   ),
                 ),
                 const SizedBox(height: 12),
-                Text("$firstName $lastName", style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: kPrimaryColor)),
-                Text("Customer", style: TextStyle(fontSize: 14, color: Colors.brown[400])),
+                Text("${p['first_name']} ${p['last_name']}", style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: kPrimaryColor)),
                 const SizedBox(height: 30),
 
-                // --- Service Info ---
+                // --- Status Banner ---
+                if (isCompleted)
+                  Container(
+                    width: double.infinity,
+                    padding: const EdgeInsets.symmetric(vertical: 12),
+                    margin: const EdgeInsets.only(bottom: 20),
+                    decoration: BoxDecoration(color: kAcceptColor.withOpacity(0.1), borderRadius: BorderRadius.circular(12), border: Border.all(color: kAcceptColor)),
+                    child: const Text("Job Completed", textAlign: TextAlign.center, style: TextStyle(color: kAcceptColor, fontWeight: FontWeight.bold, fontSize: 18)),
+                  )
+                else if (isAccepted)
+                  Container(
+                    width: double.infinity,
+                    padding: const EdgeInsets.symmetric(vertical: 12),
+                    margin: const EdgeInsets.only(bottom: 20),
+                    decoration: BoxDecoration(color: kCompleteColor.withOpacity(0.1), borderRadius: BorderRadius.circular(12), border: Border.all(color: kCompleteColor)),
+                    child: const Text("Work In Progress", textAlign: TextAlign.center, style: TextStyle(color: kCompleteColor, fontWeight: FontWeight.bold, fontSize: 18)),
+                  ),
+
+                // --- Details ---
                 _buildInfoCard(
                   title: "Service Details",
                   icon: Icons.work,
                   child: Column(
                     children: [
-                      _buildDetailRow(Icons.title, "Title", title),
+                      _buildDetailRow(Icons.title, "Title", s['service_title']),
                       const Divider(height: 24),
-                      _buildDetailRow(Icons.location_on, "Location", location),
+                      _buildDetailRow(Icons.location_on, "Location", s['location'] ?? "No location"),
+                      if (isAccepted && details != null) ...[
+                        const Divider(height: 24),
+                        _buildDetailRow(Icons.calendar_today, "Est. Completion", expectedEnd),
+                        const Divider(height: 24),
+                        _buildDetailRow(Icons.attach_money, "Price", "${details['price']} PKR"),
+                      ]
                     ],
                   ),
                 ),
-                const SizedBox(height: 20),
-                _buildInfoCard(
-                  title: "Description",
-                  icon: Icons.description,
-                  child: Text(description, style: const TextStyle(color: Colors.black87, fontSize: 15, height: 1.5)),
-                ),
                 const SizedBox(height: 40),
 
-                // --- Buttons / Inputs ---
-                if (!_showInputFields)
+                // --- ACTION BUTTONS LOGIC ---
+                
+                // Case 1: Job Completed (No Actions)
+                if (isCompleted)
+                  const SizedBox() 
+
+                // Case 2: Accepted & In Progress (Update Actions)
+                else if (isAccepted)
+                  Column(
+                    children: [
+                      SizedBox(
+                        width: double.infinity,
+                        height: 55,
+                        child: OutlinedButton(
+                          onPressed: () => _updateJobStatus(updateTime: true),
+                          style: OutlinedButton.styleFrom(
+                            side: const BorderSide(color: kPrimaryColor, width: 2),
+                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                          ),
+                          child: const Text("Update Estimated Time", style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: kPrimaryColor)),
+                        ),
+                      ),
+                      const SizedBox(height: 16),
+                      SizedBox(
+                        width: double.infinity,
+                        height: 55,
+                        child: ElevatedButton(
+                          onPressed: () => _updateJobStatus(markCompleted: true),
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: kAcceptColor,
+                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                          ),
+                          child: const Text("Mark as Completed", style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.white)),
+                        ),
+                      ),
+                    ],
+                  )
+
+                // Case 3: New Request (Accept/Decline)
+                else if (!_showInputFields)
                   Row(
                     children: [
                       Expanded(
@@ -274,10 +325,7 @@ class _ServiceRequestDetailsScreenState extends State<ServiceRequestDetailsScree
                           height: 55,
                           child: OutlinedButton(
                             onPressed: _handleDecline,
-                            style: OutlinedButton.styleFrom(
-                              side: const BorderSide(color: kDeclineColor, width: 2),
-                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                            ),
+                            style: OutlinedButton.styleFrom(side: const BorderSide(color: kDeclineColor, width: 2), shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12))),
                             child: const Text("Decline", style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: kDeclineColor)),
                           ),
                         ),
@@ -287,19 +335,18 @@ class _ServiceRequestDetailsScreenState extends State<ServiceRequestDetailsScree
                         child: SizedBox(
                           height: 55,
                           child: ElevatedButton(
-                            onPressed: _handleAcceptPress,
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: kPrimaryColor,
-                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                            ),
+                            onPressed: () => setState(() => _showInputFields = true),
+                            style: ElevatedButton.styleFrom(backgroundColor: kPrimaryColor, shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12))),
                             child: const Text("Accept Job", style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.white)),
                           ),
                         ),
                       ),
                     ],
                   )
-                else
-                  _buildInputForm(),
+                
+                // Case 4: Filling Details for Acceptance
+                else 
+                  _buildAcceptanceForm(),
 
                 const SizedBox(height: 40),
               ],
@@ -310,53 +357,33 @@ class _ServiceRequestDetailsScreenState extends State<ServiceRequestDetailsScree
     );
   }
 
-  // --- Helper Widgets ---
-  Widget _buildInputForm() {
+  Widget _buildAcceptanceForm() {
     return Container(
       padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: kPrimaryColor, width: 1),
-        boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 10)],
-      ),
+      decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(16), border: Border.all(color: kPrimaryColor), boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 10)]),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           const Text("Finalize Agreement", style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: kPrimaryColor)),
           const SizedBox(height: 20),
-          
           TextField(
             controller: _priceController,
             keyboardType: TextInputType.number,
-            decoration: InputDecoration(
-              labelText: "Agreed Price",
-              prefixText: "\$ ",
-              border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
-              filled: true,
-              fillColor: kFieldColor,
-            ),
+            decoration: InputDecoration(labelText: "Agreed Price", prefixText: "PKR ", border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)), filled: true, fillColor: kFieldColor),
           ),
           const SizedBox(height: 16),
-
           GestureDetector(
-            onTap: _pickEndDate,
+            onTap: () async {
+              final date = await _pickDate();
+              if (date != null) setState(() => _estimatedEndDate = date);
+            },
             child: Container(
               padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 16),
-              decoration: BoxDecoration(
-                color: kFieldColor,
-                borderRadius: BorderRadius.circular(12),
-                border: Border.all(color: Colors.grey.shade400),
-              ),
+              decoration: BoxDecoration(color: kFieldColor, borderRadius: BorderRadius.circular(12), border: Border.all(color: Colors.grey.shade400)),
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  Text(
-                    _estimatedEndDate == null 
-                        ? "Select Estimated End Date" 
-                        : DateFormat('MMM d, y').format(_estimatedEndDate!),
-                    style: TextStyle(color: _estimatedEndDate == null ? Colors.grey[700] : Colors.black, fontSize: 16),
-                  ),
+                  Text(_estimatedEndDate == null ? "Select Estimated End Date" : DateFormat('MMM d, y').format(_estimatedEndDate!), style: TextStyle(color: _estimatedEndDate == null ? Colors.grey[700] : Colors.black, fontSize: 16)),
                   const Icon(Icons.calendar_today, color: kPrimaryColor),
                 ],
               ),
@@ -367,11 +394,8 @@ class _ServiceRequestDetailsScreenState extends State<ServiceRequestDetailsScree
             width: double.infinity,
             height: 50,
             child: ElevatedButton(
-              onPressed: _submitFinalAcceptance,
-              style: ElevatedButton.styleFrom(
-                backgroundColor: kAcceptColor,
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-              ),
+              onPressed: _submitInitialAcceptance,
+              style: ElevatedButton.styleFrom(backgroundColor: kAcceptColor, shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12))),
               child: const Text("Confirm & Send", style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.white)),
             ),
           ),
