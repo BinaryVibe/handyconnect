@@ -102,7 +102,7 @@ class _WorkerDashboardState extends State<WorkerDashboard> {
         page = const ProfileScreen();
         break;
       default:
-        throw UnimplementedError("No widger for $_selectedIndex");
+        throw UnimplementedError("No widget for $_selectedIndex");
     }
 
     return LayoutBuilder(
