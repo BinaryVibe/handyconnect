@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:go_router/go_router.dart';
@@ -9,7 +10,7 @@ const Color kPrimaryColor = Color.fromARGB(255, 74, 46, 30);
 const Color kFieldColor = Color(0xFFE9DFD8);
 const Color kBackgroundColor = Color(0xFFF7F2EF);
 const Color tagsBgColor = Color(0xFFBFC882);
-const Color kErrorColor = Color(0xFFD32F2F); 
+const Color kErrorColor = Color(0xFFD32F2F);
 
 class ProfileScreen extends StatefulWidget {
   const ProfileScreen({super.key});
@@ -43,6 +44,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
   DateTime? _dateJoined;
   final ImagePicker _picker = ImagePicker();
 
+  final _supabase = Supabase.instance.client;
+
   @override
   void initState() {
     super.initState();
@@ -62,8 +65,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
   // --- 1. LOAD DATA ---
   Future<void> _loadProfileData() async {
     try {
-      final client = Supabase.instance.client;
-      final user = client.auth.currentUser;
+      final user = _supabase.auth.currentUser;
 
       if (user == null) {
         context.go('/login');
@@ -72,7 +74,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
       _userId = user.id;
 
       // A. Fetch Basic Profile
-      final profileData = await client
+      final profileData = await _supabase
           .from('profiles')
           .select()
           .eq('id', _userId!)
@@ -87,15 +89,15 @@ class _ProfileScreenState extends State<ProfileScreen> {
           _lastNameController.text = profileData['last_name'] ?? '';
           _phoneController.text = profileData['phone_number'] ?? '';
           _email = profileData['email'] ?? '';
-          _avatarUrl = profileData['avatar_url'] != null 
-              ? '${profileData['avatar_url']}?t=${DateTime.now().millisecondsSinceEpoch}' 
+          _avatarUrl = profileData['avatar_url'] != null
+              ? '${profileData['avatar_url']}?t=${DateTime.now().millisecondsSinceEpoch}'
               : null;
         });
       }
 
       // B. Conditional Fetch based on Role
       if (_isWorker) {
-        final workerData = await client
+        final workerData = await _supabase
             .from('workers')
             .select()
             .eq('id', _userId!)
@@ -111,7 +113,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
           });
         }
       } else {
-        final customerData = await client
+        final customerData = await _supabase
             .from('customers')
             .select('date_joined')
             .eq('id', _userId!)
@@ -128,7 +130,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Error: $e')));
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('Error: $e')));
         setState(() => _isLoading = false);
       }
     }
@@ -150,8 +154,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
       final fileExt = image.name.split('.').last;
       final fileName = '$_userId/profile.$fileExt';
 
-      await Supabase.instance.client.storage
-          .from('avatars') 
+      await _supabase.storage
+          .from('avatars')
           .uploadBinary(
             fileName,
             bytes,
@@ -161,13 +165,14 @@ class _ProfileScreenState extends State<ProfileScreen> {
             ),
           );
 
-      final imageUrl = Supabase.instance.client.storage
+      final imageUrl = _supabase.storage
           .from('avatars')
           .getPublicUrl(fileName);
-      
-      final imageUrlWithTimestamp = '$imageUrl?t=${DateTime.now().millisecondsSinceEpoch}';
 
-      await Supabase.instance.client
+      final imageUrlWithTimestamp =
+          '$imageUrl?t=${DateTime.now().millisecondsSinceEpoch}';
+
+      await _supabase
           .from('profiles')
           .update({'avatar_url': imageUrl})
           .eq('id', _userId!);
@@ -179,14 +184,19 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Profile picture updated!'), backgroundColor: Colors.green),
+          const SnackBar(
+            content: Text('Profile picture updated!'),
+            backgroundColor: Colors.green,
+          ),
         );
       }
-
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Upload failed: $e'), backgroundColor: Colors.red),
+          SnackBar(
+            content: Text('Upload failed: $e'),
+            backgroundColor: Colors.red,
+          ),
         );
         setState(() => _isUploading = false);
       }
@@ -197,31 +207,41 @@ class _ProfileScreenState extends State<ProfileScreen> {
   Future<void> _saveChanges() async {
     setState(() => _isSaving = true);
     try {
-      final client = Supabase.instance.client;
 
-      await client.from('profiles').update({
-        'first_name': _firstNameController.text.trim(),
-        'last_name': _lastNameController.text.trim(),
-        'phone_number': _phoneController.text.trim(),
-        'updated_at': DateTime.now().toIso8601String(),
-      }).eq('id', _userId!);
+      await _supabase
+          .from('profiles')
+          .update({
+            'first_name': _firstNameController.text.trim(),
+            'last_name': _lastNameController.text.trim(),
+            'phone_number': _phoneController.text.trim(),
+            'updated_at': DateTime.now().toIso8601String(),
+          })
+          .eq('id', _userId!);
 
       if (_isWorker) {
-        await client.from('workers').update({
-          'profession': _professionController.text.trim(),
-          'availability': _isAvailable,
-          'skills': _skills,
-        }).eq('id', _userId!);
+        await _supabase
+            .from('workers')
+            .update({
+              'profession': _professionController.text.trim(),
+              'availability': _isAvailable,
+              'skills': _skills,
+            })
+            .eq('id', _userId!);
       }
 
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Profile updated successfully!'), backgroundColor: Colors.green),
+          const SnackBar(
+            content: Text('Profile updated successfully!'),
+            backgroundColor: Colors.green,
+          ),
         );
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Error: $e'), backgroundColor: Colors.red));
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Error: $e'), backgroundColor: Colors.red),
+        );
       }
     } finally {
       if (mounted) setState(() => _isSaving = false);
@@ -247,7 +267,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
           ),
           actions: [
             TextButton(
-              onPressed: () => Navigator.pop(dialogContext), 
+              onPressed: () => Navigator.pop(dialogContext),
               child: const Text("Cancel"),
             ),
             ElevatedButton(
@@ -255,7 +275,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 final newPass = passwordController.text.trim();
                 if (newPass.length < 6) {
                   ScaffoldMessenger.of(dialogContext).showSnackBar(
-                    const SnackBar(content: Text('Password must be at least 6 chars')),
+                    const SnackBar(
+                      content: Text('Password must be at least 6 chars'),
+                    ),
                   );
                   return;
                 }
@@ -263,24 +285,36 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 setState(() => _isSaving = true);
 
                 try {
-                  await Supabase.instance.client.auth.updateUser(
+                  await _supabase.auth.updateUser(
                     UserAttributes(password: newPass),
                   );
+
                   if (mounted) {
                     ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(content: Text('Password changed successfully!'), backgroundColor: Colors.green),
+                      const SnackBar(
+                        content: Text('Password changed successfully!'),
+                        backgroundColor: Colors.green,
+                      ),
                     );
                   }
                 } catch (e) {
                   if (mounted) {
-                    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Error: $e'), backgroundColor: Colors.red));
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(
+                        content: Text('Error: $e'),
+                        backgroundColor: Colors.red,
+                      ),
+                    );
                   }
                 } finally {
                   if (mounted) setState(() => _isSaving = false);
                 }
               },
               style: ElevatedButton.styleFrom(backgroundColor: kPrimaryColor),
-              child: const Text("Update", style: TextStyle(color: Colors.white)),
+              child: const Text(
+                "Update",
+                style: TextStyle(color: Colors.white),
+              ),
             ),
           ],
         );
@@ -328,19 +362,30 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   );
                   if (mounted) {
                     ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(content: Text('Confirmation link sent to $newEmail!'), backgroundColor: Colors.blue),
+                      SnackBar(
+                        content: Text('Confirmation link sent to $newEmail!'),
+                        backgroundColor: Colors.blue,
+                      ),
                     );
                   }
                 } catch (e) {
                   if (mounted) {
-                    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Error: $e'), backgroundColor: Colors.red));
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(
+                        content: Text('Error: $e'),
+                        backgroundColor: Colors.red,
+                      ),
+                    );
                   }
                 } finally {
                   if (mounted) setState(() => _isSaving = false);
                 }
               },
               style: ElevatedButton.styleFrom(backgroundColor: kPrimaryColor),
-              child: const Text("Update", style: TextStyle(color: Colors.white)),
+              child: const Text(
+                "Update",
+                style: TextStyle(color: Colors.white),
+              ),
             ),
           ],
         );
@@ -356,14 +401,22 @@ class _ProfileScreenState extends State<ProfileScreen> {
       context: context,
       builder: (dialogContext) {
         return AlertDialog(
-          title: const Text("Delete Profile", style: TextStyle(color: kErrorColor)),
+          title: const Text(
+            "Delete Profile",
+            style: TextStyle(color: kErrorColor),
+          ),
           content: Column(
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const Text("Are you sure you want to delete your profile? This action cannot be undone."),
+              const Text(
+                "Are you sure you want to delete your profile? This action cannot be undone.",
+              ),
               const SizedBox(height: 16),
-              const Text("Type DELETE below to confirm:", style: TextStyle(fontWeight: FontWeight.bold)),
+              const Text(
+                "Type DELETE below to confirm:",
+                style: TextStyle(fontWeight: FontWeight.bold),
+              ),
               const SizedBox(height: 8),
               TextField(
                 controller: confirmController,
@@ -383,39 +436,50 @@ class _ProfileScreenState extends State<ProfileScreen> {
               onPressed: () async {
                 if (confirmController.text != "DELETE") {
                   ScaffoldMessenger.of(dialogContext).showSnackBar(
-                    const SnackBar(content: Text('Please type DELETE correctly to confirm.')),
+                    const SnackBar(
+                      content: Text('Please type DELETE correctly to confirm.'),
+                    ),
                   );
                   return;
                 }
-                
+
                 Navigator.pop(dialogContext); // Close dialog
                 setState(() => _isLoading = true); // Show full screen loading
 
                 try {
-                  await Supabase.instance.client
+                  await _supabase
                       .from('profiles')
                       .delete()
                       .eq('id', _userId!);
 
-                  await Supabase.instance.client.auth.signOut();
+                  await _supabase.auth.signOut();
 
                   if (mounted) {
                     ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(content: Text('Profile deleted successfully.'), backgroundColor: Colors.grey),
+                      const SnackBar(
+                        content: Text('Profile deleted successfully.'),
+                        backgroundColor: Colors.grey,
+                      ),
                     );
                     context.go('/login');
                   }
                 } catch (e) {
                   if (mounted) {
                     ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(content: Text('Error deleting profile: $e'), backgroundColor: Colors.red),
+                      SnackBar(
+                        content: Text('Error deleting profile: $e'),
+                        backgroundColor: Colors.red,
+                      ),
                     );
                     setState(() => _isLoading = false);
                   }
                 }
               },
               style: ElevatedButton.styleFrom(backgroundColor: kErrorColor),
-              child: const Text("Delete", style: TextStyle(color: Colors.white)),
+              child: const Text(
+                "Delete",
+                style: TextStyle(color: Colors.white),
+              ),
             ),
           ],
         );
@@ -442,7 +506,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
   @override
   Widget build(BuildContext context) {
     if (_isLoading) {
-      return const Center(child: CircularProgressIndicator(color: kPrimaryColor));
+      return const Center(
+        child: CircularProgressIndicator(color: kPrimaryColor),
+      );
     }
 
     return Center(
@@ -473,20 +539,20 @@ class _ProfileScreenState extends State<ProfileScreen> {
                           Expanded(child: _buildWorkerDetailsCard()),
                         ],
                       ),
-                    ]
+                    ],
                   ] else ...[
                     _buildPersonalInfoCard(),
                   ],
 
                   const SizedBox(height: 40),
-                  
+
                   // --- NEW BUTTON LAYOUT ---
-                  
+
                   // 1. Primary Action: Save Changes
                   _buildSaveButton(),
-                  
+
                   const SizedBox(height: 20),
-                  
+
                   // 2. Secondary Actions: Change Password & Email (Side by Side)
                   Row(
                     children: [
@@ -495,14 +561,14 @@ class _ProfileScreenState extends State<ProfileScreen> {
                       Expanded(child: _buildChangeEmailButton()),
                     ],
                   ),
-                  
+
                   const SizedBox(height: 40),
                   const Divider(),
                   const SizedBox(height: 10),
 
                   // 3. Danger Action: Delete Profile
                   _buildDeleteProfileButton(),
-                  
+
                   const SizedBox(height: 40),
                 ],
               ),
@@ -527,22 +593,42 @@ class _ProfileScreenState extends State<ProfileScreen> {
         children: [
           Stack(
             children: [
-              _isUploading 
-                  ? const CircleAvatar(radius: 50, backgroundColor: Colors.white, child: CircularProgressIndicator(color: kPrimaryColor))
+              _isUploading
+                  ? const CircleAvatar(
+                      radius: 50,
+                      backgroundColor: Colors.white,
+                      child: CircularProgressIndicator(color: kPrimaryColor),
+                    )
                   : CircleAvatar(
                       radius: 50,
                       backgroundColor: kPrimaryColor,
-                      backgroundImage: _avatarUrl != null ? NetworkImage(_avatarUrl!) : null,
-                      child: _avatarUrl == null ? const Icon(Icons.person, size: 50, color: Colors.white) : null,
+                      backgroundImage: _avatarUrl != null
+                          ? NetworkImage(_avatarUrl!)
+                          : null,
+                      child: _avatarUrl == null
+                          ? const Icon(
+                              Icons.person,
+                              size: 50,
+                              color: Colors.white,
+                            )
+                          : null,
                     ),
               Positioned(
-                bottom: 0, right: 0,
+                bottom: 0,
+                right: 0,
                 child: GestureDetector(
                   onTap: _uploadProfilePicture,
                   child: Container(
                     padding: const EdgeInsets.all(8),
-                    decoration: const BoxDecoration(color: kPrimaryColor, shape: BoxShape.circle),
-                    child: const Icon(Icons.camera_alt, color: Colors.white, size: 20),
+                    decoration: const BoxDecoration(
+                      color: kPrimaryColor,
+                      shape: BoxShape.circle,
+                    ),
+                    child: const Icon(
+                      Icons.camera_alt,
+                      color: Colors.white,
+                      size: 20,
+                    ),
                   ),
                 ),
               ),
@@ -551,14 +637,26 @@ class _ProfileScreenState extends State<ProfileScreen> {
           const SizedBox(height: 16),
           Text(
             "${_firstNameController.text} ${_lastNameController.text}",
-            style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: kPrimaryColor),
+            style: const TextStyle(
+              fontSize: 24,
+              fontWeight: FontWeight.bold,
+              color: kPrimaryColor,
+            ),
           ),
           const SizedBox(height: 4),
-          
+
           if (_isWorker)
-             Text(_professionController.text.isNotEmpty ? _professionController.text : "No profession set", style: TextStyle(fontSize: 16, color: Colors.brown[600]))
+            Text(
+              _professionController.text.isNotEmpty
+                  ? _professionController.text
+                  : "No profession set",
+              style: TextStyle(fontSize: 16, color: Colors.brown[600]),
+            )
           else if (_dateJoined != null)
-             Text("Customer since ${DateFormat('MMMM yyyy').format(_dateJoined!)}", style: TextStyle(fontSize: 14, color: Colors.brown[600])),
+            Text(
+              "Customer since ${DateFormat('MMMM yyyy').format(_dateJoined!)}",
+              style: TextStyle(fontSize: 14, color: Colors.brown[600]),
+            ),
         ],
       ),
     );
@@ -573,9 +671,17 @@ class _ProfileScreenState extends State<ProfileScreen> {
           const SizedBox(height: 16),
           _buildTextField("Last Name", _lastNameController),
           const SizedBox(height: 16),
-          _buildTextField("Email", TextEditingController(text: _email), isReadOnly: true),
+          _buildTextField(
+            "Email",
+            TextEditingController(text: _email),
+            isReadOnly: true,
+          ),
           const SizedBox(height: 16),
-          _buildTextField("Phone Number", _phoneController, inputType: TextInputType.phone),
+          _buildTextField(
+            "Phone Number",
+            _phoneController,
+            inputType: TextInputType.phone,
+          ),
         ],
       ),
     );
@@ -589,16 +695,28 @@ class _ProfileScreenState extends State<ProfileScreen> {
         children: [
           _buildTextField("Profession", _professionController),
           const SizedBox(height: 24),
-          const Text("Skills", style: TextStyle(fontWeight: FontWeight.bold, color: kPrimaryColor)),
+          const Text(
+            "Skills",
+            style: TextStyle(fontWeight: FontWeight.bold, color: kPrimaryColor),
+          ),
           const SizedBox(height: 10),
           Wrap(
-            spacing: 8, runSpacing: 8,
-            children: _skills.map((skill) => Chip(
-              label: Text(skill),
-              backgroundColor: tagsBgColor.withOpacity(0.5),
-              deleteIcon: const Icon(Icons.close, size: 16, color: Colors.black54),
-              onDeleted: () => _removeSkill(skill),
-            )).toList(),
+            spacing: 8,
+            runSpacing: 8,
+            children: _skills
+                .map(
+                  (skill) => Chip(
+                    label: Text(skill),
+                    backgroundColor: tagsBgColor.withOpacity(0.5),
+                    deleteIcon: const Icon(
+                      Icons.close,
+                      size: 16,
+                      color: Colors.black54,
+                    ),
+                    onDeleted: () => _removeSkill(skill),
+                  ),
+                )
+                .toList(),
           ),
           const SizedBox(height: 10),
           Row(
@@ -609,23 +727,49 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   child: TextField(
                     controller: _skillController,
                     decoration: InputDecoration(
-                      hintText: "Add a skill...", filled: true, fillColor: kFieldColor,
-                      contentPadding: const EdgeInsets.symmetric(horizontal: 12),
-                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(8), borderSide: BorderSide.none),
+                      hintText: "Add a skill...",
+                      filled: true,
+                      fillColor: kFieldColor,
+                      contentPadding: const EdgeInsets.symmetric(
+                        horizontal: 12,
+                      ),
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(8),
+                        borderSide: BorderSide.none,
+                      ),
                     ),
                   ),
                 ),
               ),
               const SizedBox(width: 8),
-              IconButton(onPressed: _addSkill, icon: const Icon(Icons.add_circle, color: kPrimaryColor, size: 32)),
+              IconButton(
+                onPressed: _addSkill,
+                icon: const Icon(
+                  Icons.add_circle,
+                  color: kPrimaryColor,
+                  size: 32,
+                ),
+              ),
             ],
           ),
           const SizedBox(height: 24),
           const Divider(),
           SwitchListTile(
             contentPadding: EdgeInsets.zero,
-            title: const Text("Availability", style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: kPrimaryColor)),
-            subtitle: Text(_isAvailable ? "You are listed as Available" : "You are listed as Unavailable", style: TextStyle(fontSize: 12, color: Colors.grey[600])),
+            title: const Text(
+              "Availability",
+              style: TextStyle(
+                fontSize: 16,
+                fontWeight: FontWeight.bold,
+                color: kPrimaryColor,
+              ),
+            ),
+            subtitle: Text(
+              _isAvailable
+                  ? "You are listed as Available"
+                  : "You are listed as Unavailable",
+              style: TextStyle(fontSize: 12, color: Colors.grey[600]),
+            ),
             value: _isAvailable,
             activeColor: kPrimaryColor,
             onChanged: (val) => setState(() => _isAvailable = val),
@@ -645,15 +789,28 @@ class _ProfileScreenState extends State<ProfileScreen> {
         onPressed: _isSaving ? null : _saveChanges,
         style: ElevatedButton.styleFrom(
           backgroundColor: kPrimaryColor,
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12),
+          ),
           elevation: 4,
         ),
-        icon: _isSaving 
-          ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2))
-          : const Icon(Icons.save, color: Colors.white),
+        icon: _isSaving
+            ? const SizedBox(
+                width: 20,
+                height: 20,
+                child: CircularProgressIndicator(
+                  color: Colors.white,
+                  strokeWidth: 2,
+                ),
+              )
+            : const Icon(Icons.save, color: Colors.white),
         label: Text(
-          _isSaving ? "Saving..." : "Save Changes", 
-          style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.white)
+          _isSaving ? "Saving..." : "Save Changes",
+          style: const TextStyle(
+            fontSize: 18,
+            fontWeight: FontWeight.bold,
+            color: Colors.white,
+          ),
         ),
       ),
     );
@@ -666,11 +823,20 @@ class _ProfileScreenState extends State<ProfileScreen> {
         onPressed: _isSaving ? null : _showChangePasswordDialog,
         style: OutlinedButton.styleFrom(
           side: const BorderSide(color: kPrimaryColor, width: 2),
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12),
+          ),
           padding: EdgeInsets.zero, // Compact for small screens
         ),
         icon: const Icon(Icons.lock_outline, color: kPrimaryColor, size: 20),
-        label: const Text("Change Password", style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: kPrimaryColor)),
+        label: const Text(
+          "Change Password",
+          style: TextStyle(
+            fontSize: 16,
+            fontWeight: FontWeight.bold,
+            color: kPrimaryColor,
+          ),
+        ),
       ),
     );
   }
@@ -682,11 +848,20 @@ class _ProfileScreenState extends State<ProfileScreen> {
         onPressed: _isSaving ? null : _showChangeEmailDialog,
         style: OutlinedButton.styleFrom(
           side: const BorderSide(color: kPrimaryColor, width: 2),
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12),
+          ),
           padding: EdgeInsets.zero,
         ),
         icon: const Icon(Icons.email_outlined, color: kPrimaryColor, size: 20),
-        label: const Text("Change Email", style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: kPrimaryColor)),
+        label: const Text(
+          "Change Email",
+          style: TextStyle(
+            fontSize: 16,
+            fontWeight: FontWeight.bold,
+            color: kPrimaryColor,
+          ),
+        ),
       ),
     );
   }
@@ -697,10 +872,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
         onPressed: _isSaving ? null : _showDeleteProfileDialog,
         icon: const Icon(Icons.delete_forever, color: kErrorColor),
         label: const Text(
-          "Delete Profile", 
+          "Delete Profile",
           style: TextStyle(
-            fontSize: 16, 
-            fontWeight: FontWeight.bold, 
+            fontSize: 16,
+            fontWeight: FontWeight.bold,
             color: kErrorColor,
           ),
         ),
@@ -714,12 +889,25 @@ class _ProfileScreenState extends State<ProfileScreen> {
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(16),
-        boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 10, offset: const Offset(0, 4))],
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.05),
+            blurRadius: 10,
+            offset: const Offset(0, 4),
+          ),
+        ],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(title, style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: kPrimaryColor)),
+          Text(
+            title,
+            style: const TextStyle(
+              fontSize: 18,
+              fontWeight: FontWeight.bold,
+              color: kPrimaryColor,
+            ),
+          ),
           const SizedBox(height: 20),
           child,
         ],
@@ -727,23 +915,42 @@ class _ProfileScreenState extends State<ProfileScreen> {
     );
   }
 
-  Widget _buildTextField(String label, TextEditingController controller, {bool isReadOnly = false, TextInputType inputType = TextInputType.text}) {
+  Widget _buildTextField(
+    String label,
+    TextEditingController controller, {
+    bool isReadOnly = false,
+    TextInputType inputType = TextInputType.text,
+  }) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(label, style: const TextStyle(fontSize: 14, color: Colors.black54)),
+        Text(
+          label,
+          style: const TextStyle(fontSize: 14, color: Colors.black54),
+        ),
         const SizedBox(height: 6),
         TextField(
           controller: controller,
           readOnly: isReadOnly,
           keyboardType: inputType,
-          style: TextStyle(color: isReadOnly ? Colors.grey[600] : kPrimaryColor),
+          style: TextStyle(
+            color: isReadOnly ? Colors.grey[600] : kPrimaryColor,
+          ),
           decoration: InputDecoration(
             filled: true,
             fillColor: isReadOnly ? Colors.grey[200] : kFieldColor,
-            border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none),
-            focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: const BorderSide(color: kPrimaryColor, width: 1.5)),
-            contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+            border: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+              borderSide: BorderSide.none,
+            ),
+            focusedBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+              borderSide: const BorderSide(color: kPrimaryColor, width: 1.5),
+            ),
+            contentPadding: const EdgeInsets.symmetric(
+              horizontal: 16,
+              vertical: 14,
+            ),
           ),
         ),
       ],
