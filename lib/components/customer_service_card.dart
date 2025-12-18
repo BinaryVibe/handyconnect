@@ -2,6 +2,13 @@ import 'package:flutter/material.dart';
 import 'package:handyconnect/screens/customer_booking_screen.dart';
 import 'package:handyconnect/utils/service_with_worker.dart';
 
+const Color kPrimaryColor = Color.fromARGB(255, 74, 46, 30);
+const Color listTileColor = Color(0xFFad8042);
+const Color nameColor = Color(0xffe6ccb2);
+const Color professionColor = Color(0xFFede0d4);
+const Color secondaryTextColor = Color(0xFFBFAB67);
+const Color tagsBgColor = Color(0xFFBFC882);
+
 class CustomerServiceCard extends StatelessWidget {
   final ServiceWithWorker serviceWithWorker;
   final VoidCallback onTap;
