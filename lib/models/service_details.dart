@@ -4,7 +4,6 @@ class ServiceDetails {
   final double? price;
   final String? priceUnit;
 
-  final DateTime? bookingDate;
   final DateTime? startDate;
   final DateTime? expectedEnd;
   final DateTime? completedDate;
@@ -18,7 +17,6 @@ class ServiceDetails {
     required this.serviceId,
     this.price,
     this.priceUnit,
-    this.bookingDate,
     this.startDate,
     this.expectedEnd,
     this.completedDate,
@@ -32,9 +30,6 @@ class ServiceDetails {
       serviceId: json['service_id'],
       price: json['price'] != null ? (json['price'] as num).toDouble() : null,
       priceUnit: json['price_unit'],
-      bookingDate: json['booking_date'] != null
-          ? DateTime.parse(json['booking_date'])
-          : null,
       startDate: json['start_date'] != null
           ? DateTime.parse(json['start_date'])
           : null,
@@ -55,7 +50,6 @@ class ServiceDetails {
       'service_id': serviceId,
       'price': price,
       'price_unit': priceUnit,
-      'booking_date': bookingDate?.toIso8601String(),
       'start_date': startDate?.toIso8601String(),
       'expected_end': expectedEnd?.toIso8601String(),
       'completed_date': completedDate?.toIso8601String(),
