@@ -3,7 +3,7 @@ import '../models/message.dart';
 import '../models/service.dart';
 import '../utils/chat_data.dart';
 
-class ChatHandler {
+class MessageHandler {
   final SupabaseClient _supabase = Supabase.instance.client;
 
   Future<List<ChatData>> fetchChats() async {
