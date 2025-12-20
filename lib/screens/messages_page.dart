@@ -28,7 +28,7 @@ class MessagesPage extends StatefulWidget {
 }
 
 class _MessagesPageState extends State<MessagesPage> {
-  final ChatHandler _chatHandler = ChatHandler();
+  final MessageHandler _chatHandler = MessageHandler();
   final UserHandler _userHandler = UserHandler();
   
   List<ChatData> _chats = [];
@@ -459,7 +459,7 @@ class ChatDetailScreen extends StatefulWidget {
 class _ChatDetailScreenState extends State<ChatDetailScreen> {
   final TextEditingController _messageController = TextEditingController();
   final ScrollController _scrollController = ScrollController();
-  final ChatHandler _chatHandler = ChatHandler();
+  final MessageHandler _chatHandler = MessageHandler();
   final UserHandler _userHandler = UserHandler();
   String? get _currentUserId => _userHandler.userId;
 
